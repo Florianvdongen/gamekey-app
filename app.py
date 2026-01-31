@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # app.py
 # GameKey - Light consumer prototype (Streamlit) with phone frame
-# Wider phone + logo support (assets/logos/<LEAGUE>.png) + ASCII-safe
+# Wider phone + logo support + ASCII-safe + stale selection guard
 
 import streamlit as st
 from datetime import datetime, timedelta
@@ -38,11 +38,8 @@ st.markdown(
     """
     <style>
     #MainMenu, footer, header {visibility: hidden;}
-
-    /* App background (light) */
     .stApp { background: #f3f5f9; }
 
-    /* Wider phone container */
     .block-container {
       max-width: 580px !important;
       padding-top: 1rem;
@@ -166,7 +163,6 @@ st.markdown(
       font-weight: 900;
     }
 
-    /* Force buttons to one line and fit */
     .stButton > button {
       width: 100%;
       border-radius: 12px;
@@ -194,7 +190,7 @@ st.markdown(
 )
 
 # ----------------------------
-# League logos: local assets (preferred) + SVG fallback
+# Logos: local assets + fallback badge
 # ----------------------------
 LEAGUE_COLORS = {
     "UCL": ("#0b5fff", "#ffffff"),
@@ -229,13 +225,10 @@ def svg_badge(text: str, bg: str, fg: str) -> str:
     return f"data:image/svg+xml;base64,{b64}"
 
 def league_logo_uri(league: str) -> str:
-    # Preferred: local file assets/logos/<LEAGUE>.png (or .svg/.jpg/.webp)
     for ext in ("png", "svg", "jpg", "jpeg", "webp"):
         path = os.path.join("assets", "logos", f"{league}.{ext}")
         if os.path.exists(path):
             return file_to_data_uri(path)
-
-    # Fallback: generated badge
     bg, fg = LEAGUE_COLORS.get(league, ("#0f172a", "#ffffff"))
     return svg_badge(league, bg, fg)
 
@@ -269,9 +262,9 @@ def demo_catalog():
          "start": now + timedelta(days=5, hours=2), "platform": "MLB.TV", "market": "US", "base_price": 3.49,
          "tags": ["Classic rivalry", "Prime series", "History"], "about": "A rivalry you do not need a subscription for."},
     ]
-    df = pd.DataFrame(games)
-    df["start_str"] = df["start"].dt.strftime("%a, %b %d - %I:%M %p")
-    return df.sort_values("start")
+    df_ = pd.DataFrame(games)
+    df_["start_str"] = df_["start"].dt.strftime("%a, %b %d - %I:%M %p")
+    return df_.sort_values("start")
 
 df = demo_catalog()
 
@@ -316,7 +309,6 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     title = f"{row['away']} @ {row['home']}"
     p = price_for(row["base_price"], deal_on, deal_pct)
     purchased = is_purchased(game_id)
-
     logo_uri = league_logo_uri(row["league"])
 
     st.markdown(
@@ -372,7 +364,6 @@ def checkout_sheet(game_row: pd.Series, section_key: str, deal_on=False, deal_pc
             st.markdown(f"<span class='price-chip'>Deal -{deal_pct}%</span>", unsafe_allow_html=True)
 
         st.write("---")
-
         tier = st.radio("Access", options=list(tiers.keys()), index=0, key=f"tier_{key_prefix}")
         price_paid = tiers[tier]
         st.write(f"**Total: ${price_paid:,.2f}**")
@@ -514,7 +505,6 @@ with tab_library:
                 """,
                 unsafe_allow_html=True
             )
-
             if st.button("Watch", key=f"lib_watch__{game_id}", use_container_width=True):
                 toast("Launching player (demo)...")
                 st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
@@ -545,9 +535,17 @@ with tab_profile:
         toast("Reset complete.")
         st.rerun()
 
-# Selected game details
+# ----------------------------
+# Selected game details (FIXED: handle stale selections)
+# ----------------------------
 if st.session_state.active_game:
-    game_row = df[df["game_id"] == st.session_state.active_game].iloc[0]
+    sel = df[df["game_id"] == st.session_state.active_game]
+    if sel.empty:
+        st.session_state.active_game = None
+        toast("Selection refreshed. Please pick a game again.")
+        st.rerun()
+
+    game_row = sel.iloc[0]
     game_id = game_row["game_id"]
 
     st.markdown("<div class='rowtitle'>Selected</div>", unsafe_allow_html=True)
