@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 # app.py
 # GameKey - Light consumer prototype (Streamlit) with phone frame
-# - Wider phone container
-# - Light Netflix-ish UI
-# - Buttons never cut off (short labels + CSS)
-# - League logos from repo assets/logos/<LEAGUE>.(png|svg|jpg|webp) with fallback badge
-# - Guard against stale active_game selection
-# - Demo "Watch" playback via YouTube embed (for believable prototype)
+# - Auto-scroll to Selected/Checkout after Buy/Details
+# - Auto-scroll to Now Playing after Watch
+# - Working YouTube demo videos
+# - Wider phone, light UI, button fit, league logos, safe guards
 
 import streamlit as st
+import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 import pandas as pd
 import uuid
@@ -34,29 +33,59 @@ if "active_game" not in st.session_state:
     st.session_state.active_game = None
 if "now_playing" not in st.session_state:
     st.session_state.now_playing = None  # dict: {title, league, url}
+if "scroll_to" not in st.session_state:
+    st.session_state.scroll_to = None  # "selected" or "player"
 
 def toast(msg: str):
     st.session_state.toast_msg = msg
 
 # ----------------------------
-# YouTube demo videos (prototype playback)
-# NOTE: replace these with any "safe" highlight/hype videos you prefer.
+# Scroll helper (works on Streamlit Cloud)
+# ----------------------------
+def request_scroll(target: str):
+    # target: "selected" or "player"
+    st.session_state.scroll_to = target
+
+def run_scroll_if_requested():
+    target = st.session_state.scroll_to
+    if target not in ("selected", "player"):
+        return
+
+    anchor_id = "selected_anchor" if target == "selected" else "player_anchor"
+    components.html(
+        f"""
+        <script>
+        const el = window.parent.document.getElementById("{anchor_id}");
+        if (el) {{
+          el.scrollIntoView({{behavior: "smooth", block: "start"}});
+        }}
+        </script>
+        """,
+        height=0,
+    )
+    # Clear after firing once
+    st.session_state.scroll_to = None
+
+# ----------------------------
+# YouTube demo videos (working examples)
+# Replace anytime with your preferred ones.
 # ----------------------------
 YOUTUBE_DEMOS = {
-    "UCL": "https://www.youtube.com/watch?v=2cV0xE7D8qg",
-    "NBA": "https://www.youtube.com/watch?v=R9hKz8m1q4E",
-    "NFL": "https://www.youtube.com/watch?v=Hj5c7G9wZqI",
-    "MLS": "https://www.youtube.com/watch?v=7q0z1F0kFzQ",
-    "MLB": "https://www.youtube.com/watch?v=9p9d3k6yq0A",
-    "NWSL": "https://www.youtube.com/watch?v=J8Q5p3y4ZkQ",
+    "UCL":  "https://www.youtube.com/watch?v=pKrgnOI39Wk",  # UCL highlights example :contentReference[oaicite:1]{index=1}
+    "NBA":  "https://www.youtube.com/watch?v=212qcAyAMuE",  # NBA full game highlights example :contentReference[oaicite:2]{index=2}
+    "NFL":  "https://www.youtube.com/watch?v=CgCJ2nBAEaU",  # NFL game highlights example :contentReference[oaicite:3]{index=3}
+    "MLS":  "https://www.youtube.com/watch?v=NXAQuATHNa0",  # MLS match highlights example :contentReference[oaicite:4]{index=4}
+    "MLB":  "https://www.youtube.com/watch?v=cutEVnQkOX8",  # MLB highlights example :contentReference[oaicite:5]{index=5}
+    "NWSL": "https://www.youtube.com/watch?v=r7hkQM55SGk",  # NWSL highlights example :contentReference[oaicite:6]{index=6}
 }
 
 def start_demo_playback(title: str, league: str):
     st.session_state.now_playing = {
         "title": title,
         "league": league,
-        "url": YOUTUBE_DEMOS.get(league)
+        "url": YOUTUBE_DEMOS.get(league),
     }
+    request_scroll("player")
 
 # ----------------------------
 # CSS: Light UI + wider phone + button fit
@@ -67,7 +96,6 @@ st.markdown(
     #MainMenu, footer, header {visibility: hidden;}
     .stApp { background: #f3f5f9; }
 
-    /* Wider phone container */
     .block-container {
       max-width: 600px !important;
       padding-top: 1rem;
@@ -192,7 +220,6 @@ st.markdown(
       font-weight: 900;
     }
 
-    /* Buttons: smaller font, tighter padding, and ellipsis if needed */
     .stButton > button {
       width: 100%;
       border-radius: 14px;
@@ -358,6 +385,8 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     with c1:
         if st.button("Details", key=f"details_{key_prefix}", use_container_width=True):
             st.session_state.active_game = game_id
+            request_scroll("selected")
+            st.rerun()
     with c2:
         if purchased:
             if st.button("Watch", key=f"watch_{key_prefix}", use_container_width=True):
@@ -367,6 +396,8 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
         else:
             if st.button(f"Buy ${p:,.2f}", key=f"buy_{key_prefix}", use_container_width=True):
                 st.session_state.active_game = game_id
+                request_scroll("selected")
+                st.rerun()
 
 def row_section(title: str, subset: pd.DataFrame, section_key: str, deal_on=False, deal_pct=0, max_items=4):
     st.markdown(f"<div class='rowtitle'>{title}</div>", unsafe_allow_html=True)
@@ -568,12 +599,15 @@ with tab_profile:
         st.session_state.wallet = 12.00
         st.session_state.active_game = None
         st.session_state.now_playing = None
+        st.session_state.scroll_to = None
         toast("Reset complete.")
         st.rerun()
 
 # ----------------------------
-# Selected game details (guard against stale selection)
+# Selected / Checkout (with anchor)
 # ----------------------------
+st.markdown("<div id='selected_anchor'></div>", unsafe_allow_html=True)
+
 if st.session_state.active_game:
     sel = df[df["game_id"] == st.session_state.active_game]
     if sel.empty:
@@ -617,11 +651,14 @@ if st.session_state.active_game:
             if st.button("Add $5", key=f"checkout_add5__{game_id}", use_container_width=True):
                 st.session_state.wallet = round(st.session_state.wallet + 5.0, 2)
                 toast("Wallet +$5.")
+                request_scroll("selected")
                 st.rerun()
 
 # ----------------------------
-# Demo Player (YouTube)
+# Now Playing (with anchor)
 # ----------------------------
+st.markdown("<div id='player_anchor'></div>", unsafe_allow_html=True)
+
 if st.session_state.now_playing:
     vid = st.session_state.now_playing
     st.markdown("<div class='rowtitle'>Now Playing</div>", unsafe_allow_html=True)
@@ -630,12 +667,14 @@ if st.session_state.now_playing:
     if vid.get("url"):
         st.video(vid["url"])
     else:
-        st.warning("No demo video is set for this league.")
-        st.write("Add a URL in YOUTUBE_DEMOS for this league code.")
+        st.warning("No demo video is set for this league. Add a URL in YOUTUBE_DEMOS for this league code.")
 
     if st.button("Close Player", key="close_player", use_container_width=True):
         st.session_state.now_playing = None
         st.rerun()
+
+# Fire scroll (after anchors exist on the page)
+run_scroll_if_requested()
 
 # Close phone frame
 st.markdown("</div></div>", unsafe_allow_html=True)
