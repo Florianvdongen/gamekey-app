@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # app.py
-# GameKey - Netflix-style consumer prototype (Streamlit) with phone frame
-# ASCII-safe version for Streamlit Cloud (no bullets, no em dashes, no emojis)
+# GameKey - Light consumer prototype (Streamlit) with phone frame
+# ASCII-safe, Streamlit Cloud-safe
 
 import streamlit as st
 from datetime import datetime, timedelta
@@ -9,9 +9,6 @@ import pandas as pd
 import uuid
 import base64
 
-# ----------------------------
-# Config
-# ----------------------------
 st.set_page_config(page_title="GameKey", page_icon="GameKey", layout="wide")
 
 # ----------------------------
@@ -24,27 +21,29 @@ if "display_name" not in st.session_state:
 if "wallet" not in st.session_state:
     st.session_state.wallet = 12.00
 if "purchases" not in st.session_state:
-    st.session_state.purchases = {}  # game_id -> meta
+    st.session_state.purchases = {}
 if "toast_msg" not in st.session_state:
     st.session_state.toast_msg = None
 if "active_game" not in st.session_state:
-    st.session_state.active_game = None  # selected game_id
-
+    st.session_state.active_game = None
 
 def toast(msg: str):
     st.session_state.toast_msg = msg
 
-
 # ----------------------------
-# CSS (single style tag, properly closed)
+# Light UI CSS + single-line buttons
 # ----------------------------
 st.markdown(
     """
     <style>
     #MainMenu, footer, header {visibility: hidden;}
 
-    .stApp { background: #0b0b0f; }
+    /* App background (light) */
+    .stApp {
+      background: #f3f5f9;
+    }
 
+    /* Phone container */
     .block-container {
       max-width: 460px !important;
       padding-top: 1rem;
@@ -52,23 +51,24 @@ st.markdown(
     }
 
     .phone {
-      background: #111318;
-      border-radius: 36px;
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+      background: #ffffff;
+      border-radius: 34px;
+      border: 1px solid rgba(15,23,42,0.10);
+      box-shadow: 0 24px 70px rgba(15,23,42,0.12);
       overflow: hidden;
     }
 
     .phone-inner { padding: 18px 16px 20px 16px; }
 
     .notch {
-      height: 22px;
-      width: 140px;
+      height: 20px;
+      width: 130px;
       margin: 0 auto;
-      border-radius: 0 0 18px 18px;
-      background: #000;
+      border-radius: 0 0 16px 16px;
+      background: rgba(15,23,42,0.08);
     }
 
+    /* Top bar */
     .topbar {
       display: flex;
       justify-content: space-between;
@@ -76,118 +76,133 @@ st.markdown(
       margin-top: 10px;
     }
 
-    .brand { font-weight: 900; font-size: 18px; color: #fff; }
-    .subtle { font-size: 12px; color: #b5b8c5; }
-    .wallet { text-align: right; font-weight: 800; color: #fff; }
+    .brand { font-weight: 900; font-size: 18px; color: #0f172a; }
+    .subtle { font-size: 12px; color: #64748b; }
+    .wallet { text-align: right; font-weight: 900; color: #0f172a; }
 
+    /* Hero */
     .hero {
       margin-top: 14px;
       padding: 18px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, #2b0f1c, #15182a);
-      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(229,9,20,0.10), rgba(15,23,42,0.04));
+      border: 1px solid rgba(15,23,42,0.08);
     }
 
-    .hero-title { font-size: 28px; font-weight: 900; color: #fff; line-height: 1.05; }
-    .hero-sub { margin-top: 6px; font-size: 13px; color: #d1d4e0; }
+    .hero-title { font-size: 26px; font-weight: 950; color: #0f172a; line-height: 1.05; }
+    .hero-sub { margin-top: 6px; font-size: 13px; color: #475569; }
 
     .pill {
       display: inline-block;
       margin-top: 10px;
       margin-right: 6px;
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.12);
-      color: #fff;
+      background: rgba(15,23,42,0.06);
+      border: 1px solid rgba(15,23,42,0.08);
+      color: #0f172a;
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
     }
 
+    /* Section headers */
     .rowtitle {
       margin: 18px 0 10px 0;
       font-size: 14px;
-      font-weight: 900;
-      color: #fff;
+      font-weight: 950;
+      color: #0f172a;
     }
 
+    /* Cards */
     .poster {
-      background: #161923;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.08);
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid rgba(15,23,42,0.10);
+      box-shadow: 0 10px 30px rgba(15,23,42,0.06);
       padding: 12px;
     }
 
     .poster-art {
-      height: 140px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #2c1a2e, #1a1f33);
+      height: 132px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(229,9,20,0.14), rgba(59,130,246,0.10));
       position: relative;
       overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.06);
+      border: 1px solid rgba(15,23,42,0.10);
     }
 
     .poster-badge {
       position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(0,0,0,0.80);
+      background: rgba(255,255,255,0.90);
       padding: 6px 10px;
       border-radius: 999px;
-      color: #fff;
+      color: #0f172a;
       font-size: 11px;
-      font-weight: 800;
+      font-weight: 900;
       display: flex;
       gap: 8px;
       align-items: center;
-      border: 1px solid rgba(255,255,255,0.10);
+      border: 1px solid rgba(15,23,42,0.10);
+      box-shadow: 0 10px 24px rgba(15,23,42,0.08);
     }
 
-    .poster-main { margin-top: 10px; font-size: 13px; font-weight: 900; color: #fff; }
-    .poster-meta { margin-top: 4px; font-size: 11px; color: #aeb3c7; }
+    .poster-main { margin-top: 10px; font-size: 13px; font-weight: 950; color: #0f172a; }
+    .poster-meta { margin-top: 4px; font-size: 11px; color: #64748b; }
 
     .price-chip {
       display: inline-block;
       margin-top: 8px;
       padding: 6px 10px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.10);
-      color: #fff;
+      background: rgba(229,9,20,0.10);
+      border: 1px solid rgba(229,9,20,0.20);
+      color: #b91c1c;
       font-size: 11px;
-      font-weight: 800;
-    }
-
-    .stButton > button {
-      background: #e50914;
-      color: #fff;
-      border-radius: 14px;
       font-weight: 900;
-      border: none;
-      padding: 0.58rem 0.9rem;
     }
 
+    /* IMPORTANT: Force buttons to single line and fit */
+    .stButton > button {
+      width: 100%;
+      border-radius: 12px;
+      font-weight: 950;
+      border: 1px solid rgba(15,23,42,0.10);
+      padding: 0.45rem 0.6rem !important;
+      font-size: 0.85rem !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      line-height: 1 !important;
+    }
+
+    /* Primary buttons: red */
+    .stButton > button[kind="primary"], .stButton > button {
+      background: #e50914;
+      color: #ffffff;
+      border: none;
+    }
     .stButton > button:hover { background: #ff1f2d; }
 
+    /* Inputs */
     .stTextInput input, .stNumberInput input {
-      border-radius: 14px;
+      border-radius: 12px;
     }
-
     .stSelectbox div[data-baseweb="select"] > div {
-      border-radius: 14px;
+      border-radius: 12px;
     }
 
-    .stTabs [data-baseweb="tab"] { font-size: 12px; color: #9aa0b5; }
-    .stTabs [aria-selected="true"] {
-      color: #fff;
-      border-bottom: 2px solid #e50914;
-    }
+    /* Tabs */
+    .stTabs [data-baseweb="tab"] { font-size: 12px; color: #64748b; }
+    .stTabs [aria-selected="true"] { color: #0f172a; border-bottom: 2px solid #e50914; }
     </style>
     """,
     unsafe_allow_html=True
 )
 
 # ----------------------------
-# League badge icons (SVG generated, ASCII-safe)
+# League badge icons (SVG)
 # ----------------------------
 LEAGUE_COLORS = {
     "UCL": ("#0b5fff", "#ffffff"),
@@ -198,22 +213,19 @@ LEAGUE_COLORS = {
     "MLB": ("#00d18f", "#0b0b0f"),
 }
 
-
 def svg_badge(text: str, bg: str, fg: str) -> str:
     svg = f"""
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
-      <circle cx="11" cy="11" r="10" fill="{bg}" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
-      <text x="11" y="14" text-anchor="middle" font-family="Arial" font-size="8.5" font-weight="900's" fill="{fg}">{text}</text>
+      <circle cx="11" cy="11" r="10" fill="{bg}" stroke="rgba(15,23,42,0.18)" stroke-width="1"/>
+      <text x="11" y="14" text-anchor="middle" font-family="Arial" font-size="8.5" font-weight="900" fill="{fg}">{text}</text>
     </svg>
     """
     b64 = base64.b64encode(svg.encode("utf-8")).decode("utf-8")
     return f"data:image/svg+xml;base64,{b64}"
 
-
 def league_icon_uri(league: str) -> str:
-    bg, fg = LEAGUE_COLORS.get(league, ("#ffffff", "#000000"))
+    bg, fg = LEAGUE_COLORS.get(league, ("#0f172a", "#ffffff"))
     return svg_badge(league, bg, fg)
-
 
 # ----------------------------
 # Demo catalog
@@ -221,27 +233,27 @@ def league_icon_uri(league: str) -> str:
 def demo_catalog():
     now = datetime.now()
     games = [
-        {"game_id": "GK-5001", "sport": "Soccer", "league": "UCL", "home": "Manchester City", "away": "Galatasaray",
+        {"game_id": "GK-6001", "sport": "Soccer", "league": "UCL", "home": "Manchester City", "away": "Galatasaray",
          "start": now + timedelta(hours=7), "platform": "Paramount+", "market": "US", "base_price": 2.99,
          "tags": ["Decision Day", "High stakes", "Prime time"], "about": "A must-win night. One game. One key."},
 
-        {"game_id": "GK-5002", "sport": "Basketball", "league": "NBA", "home": "Knicks", "away": "Celtics",
+        {"game_id": "GK-6002", "sport": "Basketball", "league": "NBA", "home": "Knicks", "away": "Celtics",
          "start": now + timedelta(days=1, hours=2), "platform": "ESPN", "market": "US", "base_price": 1.99,
          "tags": ["MSG energy", "Playoff race", "Big matchup"], "about": "Classic rivalry energy in the Garden."},
 
-        {"game_id": "GK-5003", "sport": "American Football", "league": "NFL", "home": "Eagles", "away": "Cowboys",
+        {"game_id": "GK-6003", "sport": "American Football", "league": "NFL", "home": "Eagles", "away": "Cowboys",
          "start": now + timedelta(days=2, hours=4), "platform": "FOX Sports", "market": "US", "base_price": 3.99,
          "tags": ["Rivalry", "Sunday", "Must watch"], "about": "Two brands. One statement game."},
 
-        {"game_id": "GK-5004", "sport": "Soccer", "league": "MLS", "home": "NYCFC", "away": "Inter Miami",
+        {"game_id": "GK-6004", "sport": "Soccer", "league": "MLS", "home": "NYCFC", "away": "Inter Miami",
          "start": now + timedelta(days=3, hours=1), "platform": "Apple TV", "market": "US", "base_price": 2.49,
          "tags": ["Stars", "Weekend", "Big draw"], "about": "When the stars come to town, you tap in."},
 
-        {"game_id": "GK-5005", "sport": "Soccer", "league": "NWSL", "home": "Gotham FC", "away": "Angel City",
+        {"game_id": "GK-6005", "sport": "Soccer", "league": "NWSL", "home": "Gotham FC", "away": "Angel City",
          "start": now + timedelta(days=4, hours=3), "platform": "Prime Video", "market": "US", "base_price": 1.49,
          "tags": ["Womens sports", "Community", "Rising"], "about": "Elite talent. Big moment. Easy access."},
 
-        {"game_id": "GK-5006", "sport": "Baseball", "league": "MLB", "home": "Yankees", "away": "Red Sox",
+        {"game_id": "GK-6006", "sport": "Baseball", "league": "MLB", "home": "Yankees", "away": "Red Sox",
          "start": now + timedelta(days=5, hours=2), "platform": "MLB.TV", "market": "US", "base_price": 3.49,
          "tags": ["Classic rivalry", "Prime series", "History"], "about": "A rivalry you do not need a subscription for."},
     ]
@@ -249,21 +261,18 @@ def demo_catalog():
     df["start_str"] = df["start"].dt.strftime("%a, %b %d - %I:%M %p")
     return df.sort_values("start")
 
-
 df = demo_catalog()
 
 # ----------------------------
-# Purchase helpers
+# Purchase + pricing
 # ----------------------------
 def is_purchased(game_id: str) -> bool:
     return game_id in st.session_state.purchases
-
 
 def price_for(base_price: float, deal_on: bool, deal_pct: int) -> float:
     if deal_on:
         return round(float(base_price) * (1 - deal_pct / 100), 2)
     return float(base_price)
-
 
 def tier_prices(base: float):
     return {
@@ -271,7 +280,6 @@ def tier_prices(base: float):
         "Plus (24h replay)": round(base + 1.00, 2),
         "Party (watch link)": round(base + 2.00, 2),
     }
-
 
 def purchase(game_row: pd.Series, tier: str, price_paid: float):
     title = f"{game_row['away']} @ {game_row['home']}"
@@ -286,13 +294,12 @@ def purchase(game_row: pd.Series, tier: str, price_paid: float):
         "purchased_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
-
 # ----------------------------
 # UI components
 # ----------------------------
 def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     game_id = row["game_id"]
-    key_prefix = f"{section_key}__{game_id}"  # unique per section+game
+    key_prefix = f"{section_key}__{game_id}"
     title = f"{row['away']} @ {row['home']}"
     p = price_for(row["base_price"], deal_on, deal_pct)
     purchased = is_purchased(game_id)
@@ -320,13 +327,13 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
             st.session_state.active_game = game_id
     with c2:
         if purchased:
-            if st.button("Watch >", key=f"watch_{key_prefix}", use_container_width=True):
+            if st.button("Watch", key=f"watch_{key_prefix}", use_container_width=True):
                 toast("Launching player (demo)...")
-                st.info("Demo player placeholder. Production would deep-link into broadcaster stream with auth.")
+                st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
         else:
+            # Short label to prevent wrapping
             if st.button(f"Unlock ${p:,.2f}", key=f"unlock_{key_prefix}", use_container_width=True):
                 st.session_state.active_game = game_id
-
 
 def row_section(title: str, subset: pd.DataFrame, section_key: str, deal_on=False, deal_pct=0, max_items=4):
     st.markdown(f"<div class='rowtitle'>{title}</div>", unsafe_allow_html=True)
@@ -335,7 +342,6 @@ def row_section(title: str, subset: pd.DataFrame, section_key: str, deal_on=Fals
     for i, (_, row) in enumerate(subset.iterrows()):
         with cols[i % 2]:
             poster_card(row, section_key=section_key, deal_on=deal_on, deal_pct=deal_pct)
-
 
 def checkout_sheet(game_row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     game_id = game_row["game_id"]
@@ -355,7 +361,7 @@ def checkout_sheet(game_row: pd.Series, section_key: str, deal_on=False, deal_pc
         st.write("---")
 
         tier = st.radio(
-            "Choose your access",
+            "Access",
             options=list(tiers.keys()),
             index=0,
             key=f"tier_{key_prefix}"
@@ -369,13 +375,13 @@ def checkout_sheet(game_row: pd.Series, section_key: str, deal_on=False, deal_pc
             st.error("Not enough wallet balance (demo). Add funds in Profile.")
             return
 
-        if st.button(f"Confirm Purchase - ${price_paid:,.2f}", key=f"confirm_{key_prefix}", use_container_width=True):
+        # Short label to prevent wrapping
+        if st.button(f"Confirm ${price_paid:,.2f}", key=f"confirm_{key_prefix}", use_container_width=True):
             st.session_state.wallet = round(st.session_state.wallet - price_paid, 2)
             purchase(game_row, tier=tier, price_paid=price_paid)
             toast("Purchased. Unlocked in Library.")
             st.session_state.active_game = None
             st.rerun()
-
 
 def social_sheet(game_row: pd.Series, section_key: str):
     game_id = game_row["game_id"]
@@ -383,21 +389,18 @@ def social_sheet(game_row: pd.Series, section_key: str):
     share_url = f"https://gamekey.app/game/{game_id}"
 
     with st.expander("Watch Party (demo)", expanded=False):
-        st.write("Invite friends. Everyone unlocks. Then watch together (placeholder).")
-        st.text_input("Friend emails (comma-separated)", "", key=f"emails_{key_prefix}")
-        st.button("Send invites", key=f"invite_{key_prefix}", use_container_width=True)
+        st.write("Invite friends (placeholder).")
+        st.text_input("Emails (comma-separated)", "", key=f"emails_{key_prefix}")
+        st.button("Send", key=f"invite_{key_prefix}", use_container_width=True)
 
     with st.expander("Share (demo)", expanded=False):
-        st.caption("Share link (placeholder):")
         st.code(share_url, language="text")
-
 
 # ----------------------------
 # Render inside phone frame
 # ----------------------------
 st.markdown("<div class='phone'><div class='notch'></div><div class='phone-inner'>", unsafe_allow_html=True)
 
-# Top bar
 st.markdown(
     f"""
     <div class="topbar">
@@ -418,7 +421,6 @@ if st.session_state.toast_msg:
     st.success(st.session_state.toast_msg)
     st.session_state.toast_msg = None
 
-# Tabs
 tab_home, tab_explore, tab_library, tab_profile = st.tabs(["Home", "Explore", "Library", "Profile"])
 
 # ----------------------------
@@ -429,7 +431,7 @@ with tab_home:
         """
         <div class="hero">
           <div class="hero-title">Tonight is<br>for big games.</div>
-          <div class="hero-sub">Instant, low-cost access - without subscribing to another platform.</div>
+          <div class="hero-sub">Instant, low-cost access - no subscription needed.</div>
           <div>
             <span class="pill">Trending</span>
             <span class="pill">Rivalries</span>
@@ -522,7 +524,7 @@ with tab_library:
                 unsafe_allow_html=True
             )
 
-            if st.button("Watch >", key=f"lib_watch__{game_id}", use_container_width=True):
+            if st.button("Watch", key=f"lib_watch__{game_id}", use_container_width=True):
                 toast("Launching player (demo)...")
                 st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
 
@@ -574,7 +576,7 @@ if st.session_state.active_game:
     if is_purchased(game_id):
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Watch >", key=f"selected_watch__{game_id}", use_container_width=True):
+            if st.button("Watch", key=f"selected_watch__{game_id}", use_container_width=True):
                 toast("Launching player (demo)...")
                 st.info("Demo player placeholder.")
         with c2:
@@ -594,12 +596,10 @@ if st.session_state.active_game:
                 st.session_state.active_game = None
                 st.rerun()
         with c2:
-            if st.button("Add $5 to wallet", key=f"checkout_add5__{game_id}", use_container_width=True):
+            if st.button("Add $5", key=f"checkout_add5__{game_id}", use_container_width=True):
                 st.session_state.wallet = round(st.session_state.wallet + 5.0, 2)
                 toast("Wallet +$5.")
                 st.rerun()
 
-# Close phone frame
 st.markdown("</div></div>", unsafe_allow_html=True)
-
-st.caption("Demo only - No real payments/rights/streams - Built for prototype presentation.")
+st.caption("Demo only - No real payments/rights/streams - Prototype presentation.")
