@@ -1,6 +1,10 @@
 # app.py
-# GameKey — Netflix-style consumer prototype (Streamlit)
-# Demo only: no real payments/rights/streams.
+# GameKey — Netflix-style consumer prototype (Streamlit) with phone frame
+# ✅ Netflix look/feel (hero + rows)
+# ✅ League "logo" badges (stylized SVG badges)
+# ✅ Ticketing-style checkout (tiers + quick confirm)
+# ✅ Social layer (share link + watch party placeholder)
+# ✅ FIXED: Unique widget keys across repeated rows/sections
 
 import streamlit as st
 from datetime import datetime, timedelta
@@ -24,7 +28,7 @@ if "display_name" not in st.session_state:
 if "wallet" not in st.session_state:
     st.session_state.wallet = 12.00
 if "purchases" not in st.session_state:
-    st.session_state.purchases = {}
+    st.session_state.purchases = {}  # game_id -> meta
 if "toast" not in st.session_state:
     st.session_state.toast = None
 if "active_game" not in st.session_state:
@@ -44,7 +48,7 @@ st.markdown(
       footer {visibility: hidden;}
       header {visibility: hidden;}
 
-      /* Page background */
+      /* App background */
       .stApp {
         background: radial-gradient(1200px 600px at 15% 10%, rgba(255,0,80,0.16), transparent 60%),
                     radial-gradient(900px 500px at 80% 20%, rgba(0,120,255,0.18), transparent 55%),
@@ -53,8 +57,8 @@ st.markdown(
 
       /* Center content like a phone */
       .block-container {
-        max-width: 440px !important;
-        padding-top: 1.2rem;
+        max-width: 460px !important;
+        padding-top: 1.1rem;
         padding-bottom: 3rem;
       }
 
@@ -62,7 +66,7 @@ st.markdown(
       .phone {
         border-radius: 38px;
         border: 1px solid rgba(255,255,255,0.10);
-        background: rgba(10,10,16,0.86);
+        background: rgba(10,10,16,0.90);
         box-shadow: 0 30px 80px rgba(0,0,0,0.55);
         overflow: hidden;
       }
@@ -74,7 +78,7 @@ st.markdown(
         width: 140px;
         margin: 0 auto;
         border-radius: 0 0 18px 18px;
-        background: rgba(0,0,0,0.65);
+        background: rgba(0,0,0,0.70);
         border: 1px solid rgba(255,255,255,0.07);
         border-top: none;
       }
@@ -89,9 +93,7 @@ st.markdown(
         letter-spacing: -0.5px;
         font-size: 18px;
       }
-      .subtle {
-        opacity: 0.75;
-      }
+      .subtle {opacity: 0.75;}
       .wallet {
         text-align:right;
         font-weight: 800;
@@ -179,6 +181,15 @@ st.markdown(
         font-size: 11px;
         opacity: 0.75;
       }
+      .price-chip {
+        display:inline-block;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.10);
+        font-size: 11px;
+        font-weight: 850;
+      }
 
       /* Buttons rounder */
       .stButton>button {
@@ -204,8 +215,7 @@ st.markdown(
 )
 
 # ----------------------------
-# League "logo" badges (SVG)
-# (These are stylized badges, not official trademarks)
+# League "logo" badges (stylized SVG)
 # ----------------------------
 LEAGUE_COLORS = {
     "UCL": ("#0b5fff", "#ffffff"),
@@ -217,7 +227,6 @@ LEAGUE_COLORS = {
 }
 
 def svg_badge(text: str, bg: str, fg: str) -> str:
-    # Simple circular badge with initials
     svg = f"""
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
       <circle cx="11" cy="11" r="10" fill="{bg}" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
@@ -239,22 +248,22 @@ def league_icon_uri(league: str) -> str:
 def demo_catalog():
     now = datetime.now()
     games = [
-        {"game_id":"GK-3001","sport":"Soccer","league":"UCL","home":"Manchester City","away":"Galatasaray",
+        {"game_id":"GK-4001","sport":"Soccer","league":"UCL","home":"Manchester City","away":"Galatasaray",
          "start": now + timedelta(hours=7), "platform":"Paramount+","market":"US","base_price":2.99,
          "tags":["Decision Day","High stakes","Prime time"], "about":"A must-win night. One game. One key."},
-        {"game_id":"GK-3002","sport":"Basketball","league":"NBA","home":"Knicks","away":"Celtics",
+        {"game_id":"GK-4002","sport":"Basketball","league":"NBA","home":"Knicks","away":"Celtics",
          "start": now + timedelta(days=1, hours=2), "platform":"ESPN","market":"US","base_price":1.99,
          "tags":["MSG energy","Playoff race","Big matchup"], "about":"Classic rivalry energy in the Garden."},
-        {"game_id":"GK-3003","sport":"American Football","league":"NFL","home":"Eagles","away":"Cowboys",
+        {"game_id":"GK-4003","sport":"American Football","league":"NFL","home":"Eagles","away":"Cowboys",
          "start": now + timedelta(days=2, hours=4), "platform":"FOX Sports","market":"US","base_price":3.99,
          "tags":["Rivalry","Sunday","Must watch"], "about":"Two brands. One statement game."},
-        {"game_id":"GK-3004","sport":"Soccer","league":"MLS","home":"NYCFC","away":"Inter Miami",
+        {"game_id":"GK-4004","sport":"Soccer","league":"MLS","home":"NYCFC","away":"Inter Miami",
          "start": now + timedelta(days=3, hours=1), "platform":"Apple TV","market":"US","base_price":2.49,
          "tags":["Stars","Weekend","Big draw"], "about":"When the stars come to town, you tap in."},
-        {"game_id":"GK-3005","sport":"Soccer","league":"NWSL","home":"Gotham FC","away":"Angel City",
+        {"game_id":"GK-4005","sport":"Soccer","league":"NWSL","home":"Gotham FC","away":"Angel City",
          "start": now + timedelta(days=4, hours=3), "platform":"Prime Video","market":"US","base_price":1.49,
          "tags":["Women’s sports","Community","Rising"], "about":"Elite talent. Big moment. Easy access."},
-        {"game_id":"GK-3006","sport":"Baseball","league":"MLB","home":"Yankees","away":"Red Sox",
+        {"game_id":"GK-4006","sport":"Baseball","league":"MLB","home":"Yankees","away":"Red Sox",
          "start": now + timedelta(days=5, hours=2), "platform":"MLB.TV","market":"US","base_price":3.49,
          "tags":["Classic rivalry","Prime series","History"], "about":"A rivalry you don’t need a subscription for."},
     ]
@@ -270,34 +279,50 @@ df = demo_catalog()
 def is_purchased(game_id: str) -> bool:
     return game_id in st.session_state.purchases
 
-def purchase(game_id: str, title: str, price_paid: float, platform: str, start_str: str, league: str):
-    st.session_state.purchases[game_id] = {
-        "game_id": game_id,
+def purchase(game_row: pd.Series, tier: str, price_paid: float):
+    title = f"{game_row['away']} @ {game_row['home']}"
+    st.session_state.purchases[game_row["game_id"]] = {
+        "game_id": game_row["game_id"],
         "title": title,
-        "league": league,
+        "league": game_row["league"],
+        "platform": game_row["platform"],
+        "start": game_row["start_str"],
+        "tier": tier,
         "price_paid": price_paid,
-        "platform": platform,
-        "start": start_str,
         "purchased_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
 def price_for(base_price: float, deal_on: bool, deal_pct: int) -> float:
     if deal_on:
-        return round(base_price * (1 - deal_pct/100), 2)
+        return round(float(base_price) * (1 - deal_pct / 100), 2)
     return float(base_price)
+
+# ----------------------------
+# Ticketing-style tiers
+# ----------------------------
+def tier_prices(base: float):
+    # Simple tier ladder (demo)
+    return {
+        "Standard": round(base, 2),
+        "Plus (24h replay)": round(base + 1.00, 2),
+        "Party (watch link)": round(base + 2.00, 2),
+    }
 
 # ----------------------------
 # UI building blocks
 # ----------------------------
-def poster_card(row, deal_on=False, deal_pct=0):
+def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
+    """
+    Renders one "poster" game card.
+    IMPORTANT: widget keys include section_key to avoid StreamlitDuplicateElementKey
+    """
     game_id = row["game_id"]
+    key_prefix = f"{section_key}__{game_id}"  # unique per section+game
     title = f"{row['away']} @ {row['home']}"
     p = price_for(row["base_price"], deal_on, deal_pct)
     purchased = is_purchased(game_id)
-
     icon_uri = league_icon_uri(row["league"])
 
-    # Poster "art" + badge via HTML
     st.markdown(
         f"""
         <div class="poster">
@@ -314,47 +339,86 @@ def poster_card(row, deal_on=False, deal_pct=0):
         unsafe_allow_html=True
     )
 
-    # Actions (Streamlit buttons under the card)
     c1, c2 = st.columns([1, 1])
     with c1:
-        if st.button("Details", key=f"details_{game_id}", use_container_width=True):
+        if st.button("Details", key=f"details_{key_prefix}", use_container_width=True):
             st.session_state.active_game = game_id
     with c2:
         if purchased:
-            if st.button("Watch ▶", key=f"watch_{game_id}", use_container_width=True):
+            if st.button("Watch ▶", key=f"watch_{key_prefix}", use_container_width=True):
                 toast("Launching player (demo)…")
-                st.info("Demo player placeholder. In production, this deep-links into the broadcaster stream with auth.")
+                st.info("Demo player placeholder. In production, deep-link into broadcaster stream with auth.")
         else:
-            if st.button(f"Unlock ${p:,.2f}", key=f"unlock_{game_id}", use_container_width=True):
+            if st.button(f"Unlock ${p:,.2f}", key=f"unlock_{key_prefix}", use_container_width=True):
                 st.session_state.active_game = game_id
-                # Open checkout via state (below)
 
-def row_section(title: str, subset: pd.DataFrame, deal_on=False, deal_pct=0):
+def row_section(title: str, subset: pd.DataFrame, section_key: str, deal_on=False, deal_pct=0, max_items=4):
     st.markdown(f"<div class='rowtitle'>{title}</div>", unsafe_allow_html=True)
+    subset = subset.head(max_items)
     cols = st.columns(2)  # phone layout: 2 posters per row
     for i, (_, row) in enumerate(subset.iterrows()):
         with cols[i % 2]:
-            poster_card(row, deal_on=deal_on, deal_pct=deal_pct)
+            poster_card(row, section_key=section_key, deal_on=deal_on, deal_pct=deal_pct)
 
-def checkout_sheet(game_row, deal_on=False, deal_pct=0):
+def checkout_sheet(game_row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
+    """
+    Ticketing-style checkout: tier select + confirm.
+    Keys are unique per section_key + game.
+    """
+    game_id = game_row["game_id"]
+    key_prefix = f"{section_key}__checkout__{game_id}"
+
     title = f"{game_row['away']} @ {game_row['home']}"
-    p = price_for(game_row["base_price"], deal_on, deal_pct)
+    base = price_for(game_row["base_price"], deal_on, deal_pct)
+    tiers = tier_prices(base)
 
     with st.expander("🧾 Checkout", expanded=True):
         st.write(f"**{title}**")
         st.write(f"**League:** {game_row['league']}  |  **Start:** {game_row['start_str']}")
         st.write(f"**Watch on:** {game_row['platform']}")
-        st.write(f"**Price:** ${p:,.2f}" + (" (deal)" if deal_on else ""))
+        if deal_on:
+            st.markdown(f"<span class='price-chip'>Deal: -{deal_pct}%</span>", unsafe_allow_html=True)
         st.write("---")
-        if st.session_state.wallet < p:
+
+        tier = st.radio(
+            "Choose your access",
+            options=list(tiers.keys()),
+            index=0,
+            key=f"tier_{key_prefix}"
+        )
+        price_paid = tiers[tier]
+        st.write(f"**Total:** ${price_paid:,.2f}")
+
+        st.write("---")
+
+        if st.session_state.wallet < price_paid:
             st.error("Not enough wallet balance (demo). Add funds in Profile.")
-        else:
-            if st.button(f"Confirm Purchase • ${p:,.2f}", use_container_width=True, key="confirm_purchase"):
-                st.session_state.wallet = round(st.session_state.wallet - p, 2)
-                purchase(game_row["game_id"], title, p, game_row["platform"], game_row["start_str"], game_row["league"])
-                toast("Purchased ✅ Unlocked in My Library.")
-                st.session_state.active_game = None
-                st.rerun()
+            return
+
+        if st.button(f"Confirm Purchase • ${price_paid:,.2f}", key=f"confirm_{key_prefix}", use_container_width=True):
+            st.session_state.wallet = round(st.session_state.wallet - price_paid, 2)
+            purchase(game_row, tier=tier, price_paid=price_paid)
+            toast("Purchased ✅ Unlocked in Library.")
+            st.session_state.active_game = None
+            st.rerun()
+
+def social_sheet(game_row: pd.Series, section_key: str):
+    """
+    Social layer: share + watch party placeholder.
+    Keys are unique per section_key + game.
+    """
+    game_id = game_row["game_id"]
+    key_prefix = f"{section_key}__social__{game_id}"
+    share_url = f"https://gamekey.app/game/{game_id}"
+
+    with st.expander("👥 Watch Party (demo)", expanded=False):
+        st.write("Invite friends. Everyone unlocks. Then watch together (placeholder).")
+        st.text_input("Friend emails (comma-separated)", "", key=f"emails_{key_prefix}")
+        st.button("Send invites", key=f"invite_{key_prefix}", use_container_width=True)
+
+    with st.expander("🔗 Share (demo)", expanded=False):
+        st.caption("Share link (placeholder):")
+        st.code(share_url, language="text")
 
 # ----------------------------
 # Render inside phone frame
@@ -395,44 +459,48 @@ with tab_home:
           <div class="hero-title">Tonight is<br>for big games.</div>
           <div class="hero-sub">Instant, low-cost access — without subscribing to another platform.</div>
           <div>
-            <span class="pill">Trending now</span>
+            <span class="pill">Trending</span>
             <span class="pill">Rivalries</span>
-            <span class="pill">Playoff energy</span>
+            <span class="pill">For You</span>
           </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    upcoming = df[df["start"] > datetime.now()].head(4)
-    rivalries = df[df["tags"].apply(lambda x: "Rivalry" in x or "Classic rivalry" in x)].head(4)
+    upcoming = df[df["start"] > datetime.now()].head(6)
+    rivalries = df[df["tags"].apply(lambda x: any(("Rivalry" in t) or ("Classic rivalry" in t) for t in x))].head(6)
 
-    # "Netflix rows"
-    row_section("🔥 Trending Tonight", upcoming, deal_on=True, deal_pct=20)
-    row_section("⚔️ Rivalries", rivalries if not rivalries.empty else df.sample(min(4, len(df)), random_state=1), deal_on=False)
+    # Netflix-style rows (same games may appear multiple times — keys stay unique via section_key)
+    row_section("🔥 Trending Tonight", upcoming, section_key="home_trending", deal_on=True, deal_pct=20, max_items=4)
+    row_section(
+        "⚔️ Rivalries",
+        rivalries if not rivalries.empty else df.sample(min(6, len(df)), random_state=1),
+        section_key="home_rivalries",
+        deal_on=False,
+        max_items=4
+    )
 
     # Personalized-ish row
-    random.seed(7)
-    rec = df.sample(min(4, len(df)), random_state=7)
-    row_section("✨ For You", rec)
+    rec = df.sample(min(6, len(df)), random_state=7)
+    row_section("✨ For You", rec, section_key="home_foryou", deal_on=False, max_items=4)
 
 # ----------------------------
 # EXPLORE
 # ----------------------------
 with tab_explore:
     st.markdown("<div class='rowtitle'>Search & Filter</div>", unsafe_allow_html=True)
-    q = st.text_input("Search teams / league / platform", "")
 
+    q = st.text_input("Search teams / league / platform", "", key="explore_search")
     f1, f2 = st.columns(2)
     with f1:
-        sport = st.selectbox("Sport", ["All"] + sorted(df["sport"].unique().tolist()))
+        sport = st.selectbox("Sport", ["All"] + sorted(df["sport"].unique().tolist()), key="explore_sport")
     with f2:
-        league = st.selectbox("League", ["All"] + sorted(df["league"].unique().tolist()))
+        league = st.selectbox("League", ["All"] + sorted(df["league"].unique().tolist()), key="explore_league")
 
-    max_price = st.slider("Max price", 0.99, 9.99, 4.99, 0.50)
-
-    deal_on = st.toggle("Show Deals", value=False)
-    deal_pct = st.slider("Deal %", 10, 60, 20, 5) if deal_on else 0
+    max_price = st.slider("Max price", 0.99, 9.99, 4.99, 0.50, key="explore_max_price")
+    deal_on = st.toggle("Show Deals", value=False, key="explore_deals")
+    deal_pct = st.slider("Deal %", 10, 60, 20, 5, key="explore_deal_pct") if deal_on else 0
 
     filtered = df.copy()
     if q.strip():
@@ -452,7 +520,7 @@ with tab_explore:
     if filtered.empty:
         st.info("No matches — tweak filters or increase max price.")
     else:
-        row_section("Browse", filtered.head(6), deal_on=deal_on, deal_pct=deal_pct)
+        row_section("Browse", filtered, section_key="explore_browse", deal_on=deal_on, deal_pct=deal_pct, max_items=6)
 
 # ----------------------------
 # LIBRARY
@@ -463,7 +531,8 @@ with tab_library:
         st.info("No games unlocked yet. Unlock a game from Home or Explore.")
     else:
         lib = pd.DataFrame(st.session_state.purchases.values()).sort_values("purchased_at", ascending=False)
-        for _, r in lib.iterrows():
+        for idx, r in lib.iterrows():
+            game_id = r["game_id"]
             icon_uri = league_icon_uri(r["league"])
             st.markdown(
                 f"""
@@ -475,12 +544,13 @@ with tab_library:
                     </div>
                   </div>
                   <div class="poster-main">{r["title"]}</div>
-                  <div class="poster-meta">{r["start"]} • {r["platform"]} • Paid ${float(r["price_paid"]):,.2f}</div>
+                  <div class="poster-meta">{r["start"]} • {r["platform"]} • {r["tier"]} • Paid ${float(r["price_paid"]):,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Watch ▶", key=f"lib_watch_{r['game_id']}", use_container_width=True):
+            # Unique keys for library actions
+            if st.button("Watch ▶", key=f"lib_watch__{game_id}", use_container_width=True):
                 toast("Launching player (demo)…")
                 st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
             st.write("")
@@ -491,21 +561,22 @@ with tab_library:
 with tab_profile:
     st.markdown("<div class='rowtitle'>Profile</div>", unsafe_allow_html=True)
     st.write(f"**User:** {st.session_state.user_id}")
-    name = st.text_input("Display name", st.session_state.display_name)
-    if st.button("Save", use_container_width=True):
+
+    name = st.text_input("Display name", st.session_state.display_name, key="profile_name")
+    if st.button("Save", key="profile_save", use_container_width=True):
         st.session_state.display_name = name.strip() or "Guest"
         toast("Saved ✅")
         st.rerun()
 
     st.markdown("<div class='rowtitle'>Wallet (demo)</div>", unsafe_allow_html=True)
-    add = st.number_input("Add funds", min_value=0.0, max_value=200.0, value=5.0, step=1.0)
-    if st.button("Add funds", use_container_width=True):
+    add = st.number_input("Add funds", min_value=0.0, max_value=200.0, value=5.0, step=1.0, key="wallet_add_amt")
+    if st.button("Add funds", key="wallet_add_btn", use_container_width=True):
         st.session_state.wallet = round(st.session_state.wallet + float(add), 2)
         toast("Wallet updated ✅")
         st.rerun()
 
     st.markdown("<div class='rowtitle'>Reset</div>", unsafe_allow_html=True)
-    if st.button("Reset demo data", use_container_width=True):
+    if st.button("Reset demo data", key="reset_demo", use_container_width=True):
         st.session_state.purchases = {}
         st.session_state.wallet = 12.00
         st.session_state.active_game = None
@@ -513,43 +584,52 @@ with tab_profile:
         st.rerun()
 
 # ----------------------------
-# Details + Checkout “sheet”
-# (Shown when a game is selected)
+# Selected game: details + checkout + social
 # ----------------------------
 if st.session_state.active_game:
     game_row = df[df["game_id"] == st.session_state.active_game].iloc[0]
+    game_id = game_row["game_id"]
+
     st.markdown("<div class='rowtitle'>Selected</div>", unsafe_allow_html=True)
     st.info(f"{game_row['away']} @ {game_row['home']} • {game_row['league']} • {game_row['start_str']}")
     st.write(game_row["about"])
 
-    # Deal logic for the checkout from Home vibe
-    # (simple: if it’s within next 24h, we show a small deal)
+    # Simple "dynamic deal": within 24h -> deal
     within_24 = (game_row["start"] - datetime.now()) <= timedelta(hours=24)
     deal_on = bool(within_24)
     deal_pct = 20 if deal_on else 0
 
-    if is_purchased(game_row["game_id"]):
-        if st.button("Watch ▶", use_container_width=True, key="watch_selected"):
-            toast("Launching player (demo)…")
-            st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
-        if st.button("Close", use_container_width=True, key="close_selected"):
-            st.session_state.active_game = None
-            st.rerun()
-    else:
-        checkout_sheet(game_row, deal_on=deal_on, deal_pct=deal_pct)
+    if is_purchased(game_id):
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Close", use_container_width=True, key="close_checkout"):
+            if st.button("Watch ▶", key=f"selected_watch__{game_id}", use_container_width=True):
+                toast("Launching player (demo)…")
+                st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
+        with c2:
+            if st.button("Close", key=f"selected_close__{game_id}", use_container_width=True):
+                st.session_state.active_game = None
+                st.rerun()
+        # Social still available
+        social_sheet(game_row, section_key="selected_purchased")
+
+    else:
+        # Ticketing checkout + social layer
+        checkout_sheet(game_row, section_key="selected", deal_on=deal_on, deal_pct=deal_pct)
+        social_sheet(game_row, section_key="selected")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Close", key=f"checkout_close__{game_id}", use_container_width=True):
                 st.session_state.active_game = None
                 st.rerun()
         with c2:
-            # Social layer placeholders (for demo)
-            with st.expander("👥 Watch Party (demo)"):
-                st.write("Invite friends to unlock together (placeholder).")
-                st.text_input("Friend emails (comma-separated)", "")
-                st.button("Send invites", use_container_width=True, key="invite_demo")
-            with st.expander("🔗 Share (demo)"):
-                st.code(f"https://gamekey.app/game/{game_row['game_id']}", language="text")
+            # Add quick add-to-wallet nudge for demo
+            if st.button("Add $5 to wallet", key=f"checkout_add5__{game_id}", use_container_width=True):
+                st.session_state.wallet = round(st.session_state.wallet + 5.0, 2)
+                toast("Wallet +$5 ✅")
+                st.rerun()
 
 # Close phone frame
 st.markdown("</div></div>", unsafe_allow_html=True)
+
+st.caption("Demo only • No real payments/rights/streams • Built for prototype presentation.")
