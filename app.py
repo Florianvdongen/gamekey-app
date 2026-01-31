@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 # app.py
 # GameKey - Light consumer prototype (Streamlit) with phone frame
-# ASCII-safe, Streamlit Cloud-safe
+# Wider phone + logo support (assets/logos/<LEAGUE>.png) + ASCII-safe
 
 import streamlit as st
 from datetime import datetime, timedelta
 import pandas as pd
 import uuid
 import base64
+import os
 
 st.set_page_config(page_title="GameKey", page_icon="GameKey", layout="wide")
 
@@ -31,7 +32,7 @@ def toast(msg: str):
     st.session_state.toast_msg = msg
 
 # ----------------------------
-# Light UI CSS + single-line buttons
+# Light UI CSS + single-line buttons + wider phone
 # ----------------------------
 st.markdown(
     """
@@ -39,20 +40,18 @@ st.markdown(
     #MainMenu, footer, header {visibility: hidden;}
 
     /* App background (light) */
-    .stApp {
-      background: #f3f5f9;
-    }
+    .stApp { background: #f3f5f9; }
 
-    /* Phone container */
+    /* Wider phone container */
     .block-container {
-      max-width: 460px !important;
+      max-width: 580px !important;
       padding-top: 1rem;
       padding-bottom: 3rem;
     }
 
     .phone {
       background: #ffffff;
-      border-radius: 34px;
+      border-radius: 30px;
       border: 1px solid rgba(15,23,42,0.10);
       box-shadow: 0 24px 70px rgba(15,23,42,0.12);
       overflow: hidden;
@@ -68,7 +67,6 @@ st.markdown(
       background: rgba(15,23,42,0.08);
     }
 
-    /* Top bar */
     .topbar {
       display: flex;
       justify-content: space-between;
@@ -80,7 +78,6 @@ st.markdown(
     .subtle { font-size: 12px; color: #64748b; }
     .wallet { text-align: right; font-weight: 900; color: #0f172a; }
 
-    /* Hero */
     .hero {
       margin-top: 14px;
       padding: 18px;
@@ -105,7 +102,6 @@ st.markdown(
       font-weight: 800;
     }
 
-    /* Section headers */
     .rowtitle {
       margin: 18px 0 10px 0;
       font-size: 14px;
@@ -113,7 +109,6 @@ st.markdown(
       color: #0f172a;
     }
 
-    /* Cards */
     .poster {
       background: #ffffff;
       border-radius: 16px;
@@ -135,7 +130,7 @@ st.markdown(
       position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(255,255,255,0.90);
+      background: rgba(255,255,255,0.92);
       padding: 6px 10px;
       border-radius: 999px;
       color: #0f172a;
@@ -146,6 +141,14 @@ st.markdown(
       align-items: center;
       border: 1px solid rgba(15,23,42,0.10);
       box-shadow: 0 10px 24px rgba(15,23,42,0.08);
+    }
+
+    .logo {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      object-fit: contain;
+      display: block;
     }
 
     .poster-main { margin-top: 10px; font-size: 13px; font-weight: 950; color: #0f172a; }
@@ -163,37 +166,26 @@ st.markdown(
       font-weight: 900;
     }
 
-    /* IMPORTANT: Force buttons to single line and fit */
+    /* Force buttons to one line and fit */
     .stButton > button {
       width: 100%;
       border-radius: 12px;
       font-weight: 950;
-      border: 1px solid rgba(15,23,42,0.10);
+      border: none;
       padding: 0.45rem 0.6rem !important;
       font-size: 0.85rem !important;
       white-space: nowrap !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       line-height: 1 !important;
-    }
-
-    /* Primary buttons: red */
-    .stButton > button[kind="primary"], .stButton > button {
       background: #e50914;
       color: #ffffff;
-      border: none;
     }
     .stButton > button:hover { background: #ff1f2d; }
 
-    /* Inputs */
-    .stTextInput input, .stNumberInput input {
-      border-radius: 12px;
-    }
-    .stSelectbox div[data-baseweb="select"] > div {
-      border-radius: 12px;
-    }
+    .stTextInput input, .stNumberInput input { border-radius: 12px; }
+    .stSelectbox div[data-baseweb="select"] > div { border-radius: 12px; }
 
-    /* Tabs */
     .stTabs [data-baseweb="tab"] { font-size: 12px; color: #64748b; }
     .stTabs [aria-selected="true"] { color: #0f172a; border-bottom: 2px solid #e50914; }
     </style>
@@ -202,7 +194,7 @@ st.markdown(
 )
 
 # ----------------------------
-# League badge icons (SVG)
+# League logos: local assets (preferred) + SVG fallback
 # ----------------------------
 LEAGUE_COLORS = {
     "UCL": ("#0b5fff", "#ffffff"),
@@ -212,6 +204,19 @@ LEAGUE_COLORS = {
     "NWSL": ("#8a5cff", "#ffffff"),
     "MLB": ("#00d18f", "#0b0b0f"),
 }
+
+def file_to_data_uri(path: str) -> str:
+    ext = os.path.splitext(path)[1].lower().replace(".", "")
+    mime = "image/png"
+    if ext == "svg":
+        mime = "image/svg+xml"
+    elif ext in ("jpg", "jpeg"):
+        mime = "image/jpeg"
+    elif ext == "webp":
+        mime = "image/webp"
+    with open(path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("utf-8")
+    return f"data:{mime};base64,{b64}"
 
 def svg_badge(text: str, bg: str, fg: str) -> str:
     svg = f"""
@@ -223,7 +228,14 @@ def svg_badge(text: str, bg: str, fg: str) -> str:
     b64 = base64.b64encode(svg.encode("utf-8")).decode("utf-8")
     return f"data:image/svg+xml;base64,{b64}"
 
-def league_icon_uri(league: str) -> str:
+def league_logo_uri(league: str) -> str:
+    # Preferred: local file assets/logos/<LEAGUE>.png (or .svg/.jpg/.webp)
+    for ext in ("png", "svg", "jpg", "jpeg", "webp"):
+        path = os.path.join("assets", "logos", f"{league}.{ext}")
+        if os.path.exists(path):
+            return file_to_data_uri(path)
+
+    # Fallback: generated badge
     bg, fg = LEAGUE_COLORS.get(league, ("#0f172a", "#ffffff"))
     return svg_badge(league, bg, fg)
 
@@ -233,27 +245,27 @@ def league_icon_uri(league: str) -> str:
 def demo_catalog():
     now = datetime.now()
     games = [
-        {"game_id": "GK-6001", "sport": "Soccer", "league": "UCL", "home": "Manchester City", "away": "Galatasaray",
+        {"game_id": "GK-7001", "sport": "Soccer", "league": "UCL", "home": "Manchester City", "away": "Galatasaray",
          "start": now + timedelta(hours=7), "platform": "Paramount+", "market": "US", "base_price": 2.99,
          "tags": ["Decision Day", "High stakes", "Prime time"], "about": "A must-win night. One game. One key."},
 
-        {"game_id": "GK-6002", "sport": "Basketball", "league": "NBA", "home": "Knicks", "away": "Celtics",
+        {"game_id": "GK-7002", "sport": "Basketball", "league": "NBA", "home": "Knicks", "away": "Celtics",
          "start": now + timedelta(days=1, hours=2), "platform": "ESPN", "market": "US", "base_price": 1.99,
          "tags": ["MSG energy", "Playoff race", "Big matchup"], "about": "Classic rivalry energy in the Garden."},
 
-        {"game_id": "GK-6003", "sport": "American Football", "league": "NFL", "home": "Eagles", "away": "Cowboys",
+        {"game_id": "GK-7003", "sport": "American Football", "league": "NFL", "home": "Eagles", "away": "Cowboys",
          "start": now + timedelta(days=2, hours=4), "platform": "FOX Sports", "market": "US", "base_price": 3.99,
          "tags": ["Rivalry", "Sunday", "Must watch"], "about": "Two brands. One statement game."},
 
-        {"game_id": "GK-6004", "sport": "Soccer", "league": "MLS", "home": "NYCFC", "away": "Inter Miami",
+        {"game_id": "GK-7004", "sport": "Soccer", "league": "MLS", "home": "NYCFC", "away": "Inter Miami",
          "start": now + timedelta(days=3, hours=1), "platform": "Apple TV", "market": "US", "base_price": 2.49,
          "tags": ["Stars", "Weekend", "Big draw"], "about": "When the stars come to town, you tap in."},
 
-        {"game_id": "GK-6005", "sport": "Soccer", "league": "NWSL", "home": "Gotham FC", "away": "Angel City",
+        {"game_id": "GK-7005", "sport": "Soccer", "league": "NWSL", "home": "Gotham FC", "away": "Angel City",
          "start": now + timedelta(days=4, hours=3), "platform": "Prime Video", "market": "US", "base_price": 1.49,
          "tags": ["Womens sports", "Community", "Rising"], "about": "Elite talent. Big moment. Easy access."},
 
-        {"game_id": "GK-6006", "sport": "Baseball", "league": "MLB", "home": "Yankees", "away": "Red Sox",
+        {"game_id": "GK-7006", "sport": "Baseball", "league": "MLB", "home": "Yankees", "away": "Red Sox",
          "start": now + timedelta(days=5, hours=2), "platform": "MLB.TV", "market": "US", "base_price": 3.49,
          "tags": ["Classic rivalry", "Prime series", "History"], "about": "A rivalry you do not need a subscription for."},
     ]
@@ -300,17 +312,19 @@ def purchase(game_row: pd.Series, tier: str, price_paid: float):
 def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     game_id = row["game_id"]
     key_prefix = f"{section_key}__{game_id}"
+
     title = f"{row['away']} @ {row['home']}"
     p = price_for(row["base_price"], deal_on, deal_pct)
     purchased = is_purchased(game_id)
-    icon_uri = league_icon_uri(row["league"])
+
+    logo_uri = league_logo_uri(row["league"])
 
     st.markdown(
         f"""
         <div class="poster">
           <div class="poster-art">
             <div class="poster-badge">
-              <img src="{icon_uri}" width="22" height="22"/>
+              <img class="logo" src="{logo_uri}" width="22" height="22"/>
               <span>{row["league"]}</span>
             </div>
           </div>
@@ -331,7 +345,6 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
                 toast("Launching player (demo)...")
                 st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
         else:
-            # Short label to prevent wrapping
             if st.button(f"Unlock ${p:,.2f}", key=f"unlock_{key_prefix}", use_container_width=True):
                 st.session_state.active_game = game_id
 
@@ -360,22 +373,15 @@ def checkout_sheet(game_row: pd.Series, section_key: str, deal_on=False, deal_pc
 
         st.write("---")
 
-        tier = st.radio(
-            "Access",
-            options=list(tiers.keys()),
-            index=0,
-            key=f"tier_{key_prefix}"
-        )
+        tier = st.radio("Access", options=list(tiers.keys()), index=0, key=f"tier_{key_prefix}")
         price_paid = tiers[tier]
         st.write(f"**Total: ${price_paid:,.2f}**")
-
         st.write("---")
 
         if st.session_state.wallet < price_paid:
             st.error("Not enough wallet balance (demo). Add funds in Profile.")
             return
 
-        # Short label to prevent wrapping
         if st.button(f"Confirm ${price_paid:,.2f}", key=f"confirm_{key_prefix}", use_container_width=True):
             st.session_state.wallet = round(st.session_state.wallet - price_paid, 2)
             purchase(game_row, tier=tier, price_paid=price_paid)
@@ -397,7 +403,7 @@ def social_sheet(game_row: pd.Series, section_key: str):
         st.code(share_url, language="text")
 
 # ----------------------------
-# Render inside phone frame
+# Render
 # ----------------------------
 st.markdown("<div class='phone'><div class='notch'></div><div class='phone-inner'>", unsafe_allow_html=True)
 
@@ -423,9 +429,6 @@ if st.session_state.toast_msg:
 
 tab_home, tab_explore, tab_library, tab_profile = st.tabs(["Home", "Explore", "Library", "Profile"])
 
-# ----------------------------
-# HOME
-# ----------------------------
 with tab_home:
     st.markdown(
         """
@@ -446,20 +449,12 @@ with tab_home:
     rivalries = df[df["tags"].apply(lambda x: any(("Rivalry" in t) or ("Classic rivalry" in t) for t in x))].head(6)
 
     row_section("Trending Tonight", upcoming, section_key="home_trending", deal_on=True, deal_pct=20, max_items=4)
-    row_section(
-        "Rivalries",
-        rivalries if not rivalries.empty else df.sample(min(6, len(df)), random_state=1),
-        section_key="home_rivalries",
-        deal_on=False,
-        max_items=4
-    )
+    row_section("Rivalries", rivalries if not rivalries.empty else df.sample(min(6, len(df)), random_state=1),
+                section_key="home_rivalries", deal_on=False, max_items=4)
 
     rec = df.sample(min(6, len(df)), random_state=7)
     row_section("For You", rec, section_key="home_foryou", deal_on=False, max_items=4)
 
-# ----------------------------
-# EXPLORE
-# ----------------------------
 with tab_explore:
     st.markdown("<div class='rowtitle'>Search and Filter</div>", unsafe_allow_html=True)
 
@@ -494,9 +489,6 @@ with tab_explore:
     else:
         row_section("Browse", filtered, section_key="explore_browse", deal_on=deal_on, deal_pct=deal_pct, max_items=6)
 
-# ----------------------------
-# LIBRARY
-# ----------------------------
 with tab_library:
     st.markdown("<div class='rowtitle'>My Library</div>", unsafe_allow_html=True)
 
@@ -506,14 +498,13 @@ with tab_library:
         lib = pd.DataFrame(st.session_state.purchases.values()).sort_values("purchased_at", ascending=False)
         for _, r in lib.iterrows():
             game_id = r["game_id"]
-            icon_uri = league_icon_uri(r["league"])
-
+            logo_uri = league_logo_uri(r["league"])
             st.markdown(
                 f"""
                 <div class="poster">
                   <div class="poster-art" style="height:110px;">
                     <div class="poster-badge">
-                      <img src="{icon_uri}" width="22" height="22"/>
+                      <img class="logo" src="{logo_uri}" width="22" height="22"/>
                       <span>{r["league"]}</span>
                     </div>
                   </div>
@@ -527,12 +518,8 @@ with tab_library:
             if st.button("Watch", key=f"lib_watch__{game_id}", use_container_width=True):
                 toast("Launching player (demo)...")
                 st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
-
             st.write("")
 
-# ----------------------------
-# PROFILE
-# ----------------------------
 with tab_profile:
     st.markdown("<div class='rowtitle'>Profile</div>", unsafe_allow_html=True)
     st.write(f"User: {st.session_state.user_id}")
@@ -558,9 +545,7 @@ with tab_profile:
         toast("Reset complete.")
         st.rerun()
 
-# ----------------------------
 # Selected game details
-# ----------------------------
 if st.session_state.active_game:
     game_row = df[df["game_id"] == st.session_state.active_game].iloc[0]
     game_id = game_row["game_id"]
@@ -583,9 +568,7 @@ if st.session_state.active_game:
             if st.button("Close", key=f"selected_close__{game_id}", use_container_width=True):
                 st.session_state.active_game = None
                 st.rerun()
-
         social_sheet(game_row, section_key="selected_purchased")
-
     else:
         checkout_sheet(game_row, section_key="selected", deal_on=deal_on, deal_pct=deal_pct)
         social_sheet(game_row, section_key="selected")
