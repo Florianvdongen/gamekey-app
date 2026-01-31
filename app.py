@@ -3,8 +3,9 @@
 # GameKey - Light consumer prototype (Streamlit) with phone frame
 # - Auto-scroll to Selected/Checkout after Buy/Details
 # - Auto-scroll to Now Playing after Watch
-# - Working YouTube demo videos
+# - Working YouTube demo videos (with embed-safe fallback)
 # - Wider phone, light UI, button fit, league logos, safe guards
+# - Sport background images auto-filled (no empty blocks)
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -14,7 +15,7 @@ import uuid
 import base64
 import os
 
-st.set_page_config(page_title="GameKey", page_icon="GameKey", layout="wide")
+st.set_page_config(page_title="GameKey", page_icon="🔑", layout="wide")
 
 # ----------------------------
 # Session state
@@ -43,7 +44,6 @@ def toast(msg: str):
 # Scroll helper (works on Streamlit Cloud)
 # ----------------------------
 def request_scroll(target: str):
-    # target: "selected" or "player"
     st.session_state.scroll_to = target
 
 def run_scroll_if_requested():
@@ -63,32 +63,48 @@ def run_scroll_if_requested():
         """,
         height=0,
     )
-    # Clear after firing once
     st.session_state.scroll_to = None
 
 # ----------------------------
-# YouTube demo videos (working examples)
-# Replace anytime with your preferred ones.
+# YouTube demo videos
+# IMPORTANT: Some YouTube URLs don't allow embedding.
+# We'll convert "watch?v=" -> "embed/" when possible.
 # ----------------------------
 YOUTUBE_DEMOS = {
-    "UCL":  "https://www.youtube.com/watch?v=pKrgnOI39Wk",  # UCL highlights example :contentReference[oaicite:1]{index=1}
-    "NBA":  "https://www.youtube.com/watch?v=212qcAyAMuE",  # NBA full game highlights example :contentReference[oaicite:2]{index=2}
-    "NFL":  "https://www.youtube.com/watch?v=CgCJ2nBAEaU",  # NFL game highlights example :contentReference[oaicite:3]{index=3}
-    "MLS":  "https://www.youtube.com/watch?v=NXAQuATHNa0",  # MLS match highlights example :contentReference[oaicite:4]{index=4}
-    "MLB":  "https://www.youtube.com/watch?v=cutEVnQkOX8",  # MLB highlights example :contentReference[oaicite:5]{index=5}
-    "NWSL": "https://www.youtube.com/watch?v=r7hkQM55SGk",  # NWSL highlights example :contentReference[oaicite:6]{index=6}
+    "UCL":  "https://www.youtube.com/watch?v=pKrgnOI39Wk",
+    "NBA":  "https://www.youtube.com/watch?v=212qcAyAMuE",
+    "NFL":  "https://www.youtube.com/watch?v=CgCJ2nBAEaU",
+    "MLS":  "https://www.youtube.com/watch?v=NXAQuATHNa0",
+    "MLB":  "https://www.youtube.com/watch?v=cutEVnQkOX8",
+    "NWSL": "https://www.youtube.com/watch?v=r7hkQM55SGk",
 }
 
+def to_embed_url(url: str) -> str:
+    if not url:
+        return url
+    # Convert watch?v=VIDEOID to embed/VIDEOID
+    if "youtube.com/watch?v=" in url:
+        vid = url.split("watch?v=")[-1].split("&")[0]
+        return f"https://www.youtube.com/embed/{vid}"
+    # Convert youtu.be/VIDEOID to embed/VIDEOID
+    if "youtu.be/" in url:
+        vid = url.split("youtu.be/")[-1].split("?")[0]
+        return f"https://www.youtube.com/embed/{vid}"
+    return url
+
 def start_demo_playback(title: str, league: str):
+    raw = YOUTUBE_DEMOS.get(league)
     st.session_state.now_playing = {
         "title": title,
         "league": league,
-        "url": YOUTUBE_DEMOS.get(league),
+        "url": raw,
+        "embed": to_embed_url(raw) if raw else None,
     }
     request_scroll("player")
 
 # ----------------------------
 # CSS: Light UI + wider phone + button fit
+# ALL CSS MUST STAY INSIDE THIS STRING.
 # ----------------------------
 st.markdown(
     """
@@ -97,7 +113,7 @@ st.markdown(
     .stApp { background: #f3f5f9; }
 
     .block-container {
-      max-width: 600px !important;
+      max-width: 620px !important;
       padding-top: 1rem;
       padding-bottom: 3rem;
     }
@@ -114,7 +130,7 @@ st.markdown(
 
     .notch {
       height: 18px;
-      width: 140px;
+      width: 150px;
       margin: 0 auto;
       border-radius: 0 0 16px 16px;
       background: rgba(15,23,42,0.08);
@@ -173,10 +189,19 @@ st.markdown(
     .poster-art {
       height: 132px;
       border-radius: 14px;
-      background: linear-gradient(135deg, rgba(229,9,20,0.14), rgba(59,130,246,0.10));
       position: relative;
       overflow: hidden;
       border: 1px solid rgba(15,23,42,0.10);
+      background: #eef2ff;
+    }
+
+    .poster-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 1;
     }
 
     .poster-badge {
@@ -225,7 +250,7 @@ st.markdown(
       border-radius: 14px;
       font-weight: 950;
       border: none;
-      padding: 0.38rem 0.45rem !important;
+      padding: 0.42rem 0.50rem !important;
       font-size: 0.78rem !important;
       white-space: nowrap !important;
       overflow: hidden !important;
@@ -242,21 +267,10 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-.poster-art {
-  position: relative;
-  overflow: hidden;
-}
-
-.poster-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 
 # ----------------------------
 # Logos: local assets + fallback badge
+# Put files in: assets/logos/UCL.png, NBA.png, NFL.png, etc.
 # ----------------------------
 LEAGUE_COLORS = {
     "UCL": ("#0b5fff", "#ffffff"),
@@ -297,44 +311,36 @@ def league_logo_uri(league: str) -> str:
             return file_to_data_uri(path)
     bg, fg = LEAGUE_COLORS.get(league, ("#0f172a", "#ffffff"))
     return svg_badge(league, bg, fg)
-def sport_art_uri(sport: str, league: str = "") -> str:
-    """
-    Returns a base64 SVG background that matches the sport.
-    No external images required.
-    """
-    sport_key = (sport or "").lower()
 
+# ----------------------------
+# Sport background art (no external images needed)
+# ----------------------------
+def sport_art_uri(sport: str, league: str = "") -> str:
+    sport_key = (sport or "").lower()
     if "soccer" in sport_key:
-        bg1, bg2, accent = "#16a34a", "#14532d", "rgba(255,255,255,0.55)"
-        label = "SOCCER"
+        bg1, bg2, accent, label = "#16a34a", "#14532d", "rgba(255,255,255,0.55)", "SOCCER"
         lines = """
           <rect x="18" y="14" width="324" height="168" rx="18" fill="none" stroke="{accent}" stroke-width="3"/>
           <line x1="180" y1="14" x2="180" y2="182" stroke="{accent}" stroke-width="3"/>
           <circle cx="180" cy="98" r="28" fill="none" stroke="{accent}" stroke-width="3"/>
         """
     elif "basket" in sport_key:
-        bg1, bg2, accent = "#f97316", "#7c2d12", "rgba(255,255,255,0.55)"
-        label = "BASKETBALL"
+        bg1, bg2, accent, label = "#f97316", "#7c2d12", "rgba(255,255,255,0.55)", "BASKETBALL"
         lines = """
           <rect x="18" y="14" width="324" height="168" rx="18" fill="none" stroke="{accent}" stroke-width="3"/>
           <circle cx="180" cy="98" r="30" fill="none" stroke="{accent}" stroke-width="3"/>
         """
     elif "baseball" in sport_key:
-        bg1, bg2, accent = "#2563eb", "#1e3a8a", "rgba(255,255,255,0.6)"
-        label = "BASEBALL"
+        bg1, bg2, accent, label = "#2563eb", "#1e3a8a", "rgba(255,255,255,0.6)", "BASEBALL"
         lines = """
           <path d="M180 168 L240 108 L180 48 L120 108 Z" fill="none" stroke="{accent}" stroke-width="3"/>
           <circle cx="180" cy="108" r="6" fill="{accent}"/>
         """
     elif "football" in sport_key:
-        bg1, bg2, accent = "#111827", "#020617", "rgba(255,255,255,0.55)"
-        label = "FOOTBALL"
-        lines = """
-          <rect x="18" y="14" width="324" height="168" rx="18" fill="none" stroke="{accent}" stroke-width="3"/>
-        """
+        bg1, bg2, accent, label = "#111827", "#020617", "rgba(255,255,255,0.55)", "FOOTBALL"
+        lines = """<rect x="18" y="14" width="324" height="168" rx="18" fill="none" stroke="{accent}" stroke-width="3"/>"""
     else:
-        bg1, bg2, accent = "#7c3aed", "#312e81", "rgba(255,255,255,0.5)"
-        label = (league or "SPORT").upper()
+        bg1, bg2, accent, label = "#7c3aed", "#312e81", "rgba(255,255,255,0.5)", (league or "SPORT").upper()
         lines = ""
 
     svg = f"""
@@ -347,8 +353,7 @@ def sport_art_uri(sport: str, league: str = "") -> str:
       </defs>
       <rect width="360" height="196" rx="18" fill="url(#g)"/>
       {lines.format(accent=accent)}
-      <text x="20" y="180" font-size="14" font-weight="800"
-            fill="rgba(255,255,255,0.7)">{label}</text>
+      <text x="20" y="180" font-size="14" font-weight="800" fill="rgba(255,255,255,0.7)">{label}</text>
     </svg>
     """
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
@@ -430,20 +435,20 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     title = f"{row['away']} @ {row['home']}"
     p = price_for(row["base_price"], deal_on, deal_pct)
     purchased = is_purchased(game_id)
-    logo_uri = league_logo_uri(row["league"])
 
-art_uri = sport_art_uri(row["sport"], row["league"])
+    logo_uri = league_logo_uri(row["league"])
+    art_uri = sport_art_uri(row["sport"], row["league"])
 
     st.markdown(
         f"""
-       <div class="poster-art">
-  <img class="poster-bg" src="{art_uri}" />
-  <div class="poster-badge">
-    <img class="logo" src="{logo_uri}" width="22" height="22"/>
-    <span>{row["league"]}</span>
-  </div>
-</div>
-
+        <div class="poster">
+          <div class="poster-art">
+            <img class="poster-bg" src="{art_uri}" />
+            <div class="poster-badge">
+              <img class="logo" src="{logo_uri}" width="22" height="22"/>
+              <span>{row["league"]}</span>
+            </div>
+          </div>
           <div class="poster-main">{title}</div>
           <div class="poster-meta">{row["start_str"]} - {row["platform"]}</div>
         </div>
@@ -507,6 +512,7 @@ def checkout_sheet(game_row: pd.Series, section_key: str, deal_on=False, deal_pc
             purchase(game_row, tier=tier, price_paid=price_paid)
             toast("Purchased. Unlocked in Library.")
             st.session_state.active_game = None
+            request_scroll("selected")
             st.rerun()
 
 def social_sheet(game_row: pd.Series, section_key: str):
@@ -622,10 +628,12 @@ with tab_library:
         for _, r in lib.iterrows():
             game_id = r["game_id"]
             logo_uri = league_logo_uri(r["league"])
+
             st.markdown(
                 f"""
                 <div class="poster">
                   <div class="poster-art" style="height:110px;">
+                    <img class="poster-bg" src="{sport_art_uri('sport', r['league'])}" />
                     <div class="poster-badge">
                       <img class="logo" src="{logo_uri}" width="22" height="22"/>
                       <span>{r["league"]}</span>
@@ -734,7 +742,24 @@ if st.session_state.now_playing:
     st.markdown("<div class='rowtitle'>Now Playing</div>", unsafe_allow_html=True)
     st.info(f"{vid['title']} (demo playback)")
 
-    if vid.get("url"):
+    if vid.get("embed"):
+        # Embed-safe player first
+        components.html(
+            f"""
+            <div style="border-radius:16px; overflow:hidden; border:1px solid rgba(15,23,42,0.10);">
+              <iframe width="100%" height="360" src="{vid['embed']}"
+                title="YouTube video player" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+            </div>
+            """,
+            height=380,
+        )
+        # Also show st.video as a fallback
+        if vid.get("url"):
+            st.caption("If the embed is blocked, the fallback player may still work:")
+            st.video(vid["url"])
+    elif vid.get("url"):
         st.video(vid["url"])
     else:
         st.warning("No demo video is set for this league. Add a URL in YOUTUBE_DEMOS for this league code.")
@@ -743,7 +768,7 @@ if st.session_state.now_playing:
         st.session_state.now_playing = None
         st.rerun()
 
-# Fire scroll (after anchors exist on the page)
+# Fire scroll (after anchors exist)
 run_scroll_if_requested()
 
 # Close phone frame
