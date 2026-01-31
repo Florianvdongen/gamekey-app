@@ -452,7 +452,7 @@ with tab_home:
         """
         <div class="hero">
           <div class="hero-title">Tonight is<br>for big games.</div>
-          <div class="hero-sub">Instant, low-cost access — without subscribing to another platform.</div>
+          <div class="hero-sub">Instant, low-cost access - without subscribing to another platform.</div>
           <div>
             <span class="pill">Trending</span>
             <span class="pill">Rivalries</span>
