@@ -425,7 +425,7 @@ st.markdown(
     f"""
     <div class="topbar">
       <div>
-        <div class="brand">🔑 GameKey</div>
+        <div class="brand"> GameKey</div>
         <div class="subtle" style="font-size:12px;">Watch one game. Pay once.</div>
       </div>
       <div class="wallet">
