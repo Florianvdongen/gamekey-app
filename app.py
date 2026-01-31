@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 # app.py
 # GameKey - Light consumer prototype (Streamlit) with phone frame
-# Wider phone + logo support + ASCII-safe + stale selection guard
+# - Wider phone container
+# - Light Netflix-ish UI
+# - Buttons never cut off (short labels + CSS)
+# - League logos from repo assets/logos/<LEAGUE>.(png|svg|jpg|webp) with fallback badge
+# - Guard against stale active_game selection
 
 import streamlit as st
 from datetime import datetime, timedelta
@@ -32,7 +36,7 @@ def toast(msg: str):
     st.session_state.toast_msg = msg
 
 # ----------------------------
-# Light UI CSS + single-line buttons + wider phone
+# CSS: Light UI + wider phone + button fit
 # ----------------------------
 st.markdown(
     """
@@ -40,8 +44,9 @@ st.markdown(
     #MainMenu, footer, header {visibility: hidden;}
     .stApp { background: #f3f5f9; }
 
+    /* Wider phone container */
     .block-container {
-      max-width: 580px !important;
+      max-width: 600px !important;
       padding-top: 1rem;
       padding-bottom: 3rem;
     }
@@ -57,8 +62,8 @@ st.markdown(
     .phone-inner { padding: 18px 16px 20px 16px; }
 
     .notch {
-      height: 20px;
-      width: 130px;
+      height: 18px;
+      width: 140px;
       margin: 0 auto;
       border-radius: 0 0 16px 16px;
       background: rgba(15,23,42,0.08);
@@ -71,9 +76,9 @@ st.markdown(
       margin-top: 10px;
     }
 
-    .brand { font-weight: 900; font-size: 18px; color: #0f172a; }
+    .brand { font-weight: 950; font-size: 18px; color: #0f172a; }
     .subtle { font-size: 12px; color: #64748b; }
-    .wallet { text-align: right; font-weight: 900; color: #0f172a; }
+    .wallet { text-align: right; font-weight: 950; color: #0f172a; }
 
     .hero {
       margin-top: 14px;
@@ -96,7 +101,7 @@ st.markdown(
       border: 1px solid rgba(15,23,42,0.08);
       color: #0f172a;
       font-size: 11px;
-      font-weight: 800;
+      font-weight: 850;
     }
 
     .rowtitle {
@@ -108,7 +113,7 @@ st.markdown(
 
     .poster {
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 18px;
       border: 1px solid rgba(15,23,42,0.10);
       box-shadow: 0 10px 30px rgba(15,23,42,0.06);
       padding: 12px;
@@ -116,7 +121,7 @@ st.markdown(
 
     .poster-art {
       height: 132px;
-      border-radius: 12px;
+      border-radius: 14px;
       background: linear-gradient(135deg, rgba(229,9,20,0.14), rgba(59,130,246,0.10));
       position: relative;
       overflow: hidden;
@@ -146,10 +151,11 @@ st.markdown(
       border-radius: 6px;
       object-fit: contain;
       display: block;
+      background: transparent;
     }
 
-    .poster-main { margin-top: 10px; font-size: 13px; font-weight: 950; color: #0f172a; }
-    .poster-meta { margin-top: 4px; font-size: 11px; color: #64748b; }
+    .poster-main { margin-top: 10px; font-size: 16px; font-weight: 950; color: #0f172a; }
+    .poster-meta { margin-top: 4px; font-size: 12px; color: #64748b; }
 
     .price-chip {
       display: inline-block;
@@ -163,13 +169,14 @@ st.markdown(
       font-weight: 900;
     }
 
+    /* Buttons: smaller font, tighter padding, and ellipsis if needed */
     .stButton > button {
       width: 100%;
-      border-radius: 12px;
+      border-radius: 14px;
       font-weight: 950;
       border: none;
-      padding: 0.45rem 0.6rem !important;
-      font-size: 0.85rem !important;
+      padding: 0.38rem 0.45rem !important;
+      font-size: 0.78rem !important;
       white-space: nowrap !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
@@ -178,9 +185,6 @@ st.markdown(
       color: #ffffff;
     }
     .stButton > button:hover { background: #ff1f2d; }
-
-    .stTextInput input, .stNumberInput input { border-radius: 12px; }
-    .stSelectbox div[data-baseweb="select"] > div { border-radius: 12px; }
 
     .stTabs [data-baseweb="tab"] { font-size: 12px; color: #64748b; }
     .stTabs [aria-selected="true"] { color: #0f172a; border-bottom: 2px solid #e50914; }
@@ -225,6 +229,7 @@ def svg_badge(text: str, bg: str, fg: str) -> str:
     return f"data:image/svg+xml;base64,{b64}"
 
 def league_logo_uri(league: str) -> str:
+    # Looks for assets/logos/UCL.png etc.
     for ext in ("png", "svg", "jpg", "jpeg", "webp"):
         path = os.path.join("assets", "logos", f"{league}.{ext}")
         if os.path.exists(path):
@@ -337,7 +342,8 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
                 toast("Launching player (demo)...")
                 st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
         else:
-            if st.button(f"Unlock ${p:,.2f}", key=f"unlock_{key_prefix}", use_container_width=True):
+            # Short label avoids cutoffs; price still shown
+            if st.button(f"Buy ${p:,.2f}", key=f"buy_{key_prefix}", use_container_width=True):
                 st.session_state.active_game = game_id
 
 def row_section(title: str, subset: pd.DataFrame, section_key: str, deal_on=False, deal_pct=0, max_items=4):
@@ -394,7 +400,7 @@ def social_sheet(game_row: pd.Series, section_key: str):
         st.code(share_url, language="text")
 
 # ----------------------------
-# Render
+# Render: phone frame
 # ----------------------------
 st.markdown("<div class='phone'><div class='notch'></div><div class='phone-inner'>", unsafe_allow_html=True)
 
@@ -420,6 +426,7 @@ if st.session_state.toast_msg:
 
 tab_home, tab_explore, tab_library, tab_profile = st.tabs(["Home", "Explore", "Library", "Profile"])
 
+# HOME
 with tab_home:
     st.markdown(
         """
@@ -446,6 +453,7 @@ with tab_home:
     rec = df.sample(min(6, len(df)), random_state=7)
     row_section("For You", rec, section_key="home_foryou", deal_on=False, max_items=4)
 
+# EXPLORE
 with tab_explore:
     st.markdown("<div class='rowtitle'>Search and Filter</div>", unsafe_allow_html=True)
 
@@ -480,6 +488,7 @@ with tab_explore:
     else:
         row_section("Browse", filtered, section_key="explore_browse", deal_on=deal_on, deal_pct=deal_pct, max_items=6)
 
+# LIBRARY
 with tab_library:
     st.markdown("<div class='rowtitle'>My Library</div>", unsafe_allow_html=True)
 
@@ -507,9 +516,10 @@ with tab_library:
             )
             if st.button("Watch", key=f"lib_watch__{game_id}", use_container_width=True):
                 toast("Launching player (demo)...")
-                st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
+                st.info("Demo player placeholder.")
             st.write("")
 
+# PROFILE
 with tab_profile:
     st.markdown("<div class='rowtitle'>Profile</div>", unsafe_allow_html=True)
     st.write(f"User: {st.session_state.user_id}")
@@ -536,7 +546,7 @@ with tab_profile:
         st.rerun()
 
 # ----------------------------
-# Selected game details (FIXED: handle stale selections)
+# Selected game details (guard against stale selection)
 # ----------------------------
 if st.session_state.active_game:
     sel = df[df["game_id"] == st.session_state.active_game]
