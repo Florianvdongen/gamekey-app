@@ -328,7 +328,7 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
             </div>
           </div>
           <div class="poster-main">{title}</div>
-          <div class="poster-meta">{row["start_str"]} • {row["platform"]}</div>
+          <div class="poster-meta">{row["start_str"]} - {row["platform"]}</div>
         </div>
         """,
         unsafe_allow_html=True
