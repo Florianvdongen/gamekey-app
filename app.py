@@ -43,176 +43,171 @@ def toast(msg: str):
 st.markdown(
     """
     <style>
-      /* Hide Streamlit chrome */
-      #MainMenu {visibility: hidden;}
-      footer {visibility: hidden;}
-      header {visibility: hidden;}
+   <style>
+/* Hide Streamlit chrome */
+#MainMenu, footer, header {visibility: hidden;}
 
-      /* App background */
-      .stApp {
-        background: radial-gradient(1200px 600px at 15% 10%, rgba(255,0,80,0.16), transparent 60%),
-                    radial-gradient(900px 500px at 80% 20%, rgba(0,120,255,0.18), transparent 55%),
-                    #0b0b0f;
-      }
+/* App background */
+.stApp {
+  background: #0b0b0f;
+}
 
-      /* Center content like a phone */
-      .block-container {
-        max-width: 460px !important;
-        padding-top: 1.1rem;
-        padding-bottom: 3rem;
-      }
+/* Phone container */
+.block-container {
+  max-width: 460px !important;
+  padding-top: 1rem;
+  padding-bottom: 3rem;
+}
 
-      /* Phone frame */
-      .phone {
-        border-radius: 38px;
-        border: 1px solid rgba(255,255,255,0.10);
-        background: rgba(10,10,16,0.90);
-        box-shadow: 0 30px 80px rgba(0,0,0,0.55);
-        overflow: hidden;
-      }
-      .phone-inner {
-        padding: 18px 16px 20px 16px;
-      }
-      .notch {
-        height: 22px;
-        width: 140px;
-        margin: 0 auto;
-        border-radius: 0 0 18px 18px;
-        background: rgba(0,0,0,0.70);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-top: none;
-      }
+.phone {
+  background: #111318;
+  border-radius: 36px;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
 
-      /* Top bar */
-      .topbar {
-        display:flex; justify-content:space-between; align-items:center;
-        margin-top: 10px;
-      }
-      .brand {
-        font-weight: 900;
-        letter-spacing: -0.5px;
-        font-size: 18px;
-      }
-      .subtle {opacity: 0.75;}
-      .wallet {
-        text-align:right;
-        font-weight: 800;
-        font-size: 14px;
-      }
+.phone-inner {
+  padding: 18px 16px 20px 16px;
+}
 
-      /* Hero banner */
-      .hero {
-        border-radius: 22px;
-        padding: 18px 16px;
-        margin-top: 14px;
-        border: 1px solid rgba(255,255,255,0.09);
-        background:
-          radial-gradient(900px 260px at 0% 0%, rgba(255,0,80,0.30), transparent 55%),
-          radial-gradient(900px 260px at 100% 20%, rgba(255,122,0,0.22), transparent 55%),
-          linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      }
-      .hero-title {
-        font-size: 28px;
-        font-weight: 950;
-        line-height: 1.05;
-        margin: 0;
-      }
-      .hero-sub {
-        margin-top: 8px;
-        font-size: 13px;
-        opacity: 0.80;
-      }
-      .pill {
-        display:inline-block;
-        padding: 5px 10px;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.08);
-        font-size: 11px;
-        margin-right: 6px;
-        margin-top: 8px;
-      }
+.notch {
+  height: 22px;
+  width: 140px;
+  margin: 0 auto;
+  border-radius: 0 0 18px 18px;
+  background: #000;
+}
 
-      /* Row headings */
-      .rowtitle {
-        margin: 18px 0 8px 0;
-        font-size: 14px;
-        font-weight: 850;
-        letter-spacing: -0.2px;
-      }
+/* Top bar */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-      /* Poster cards */
-      .poster {
-        border-radius: 18px;
-        border: 1px solid rgba(255,255,255,0.08);
-        background: rgba(255,255,255,0.03);
-        padding: 12px;
-      }
-      .poster-art {
-        height: 140px;
-        border-radius: 14px;
-        border: 1px solid rgba(255,255,255,0.08);
-        background:
-          radial-gradient(260px 120px at 20% 30%, rgba(255,0,80,0.26), transparent 55%),
-          radial-gradient(260px 120px at 80% 20%, rgba(0,120,255,0.24), transparent 55%),
-          linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
-        position: relative;
-        overflow: hidden;
-      }
-      .poster-badge {
-        position:absolute;
-        top:10px; left:10px;
-        display:flex; align-items:center; gap:8px;
-        background: rgba(0,0,0,0.55);
-        border: 1px solid rgba(255,255,255,0.10);
-        padding: 6px 8px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 800;
-      }
-      .poster-main {
-        margin-top: 10px;
-        font-weight: 850;
-        font-size: 13px;
-        line-height: 1.1;
-      }
-      .poster-meta {
-        margin-top: 6px;
-        font-size: 11px;
-        opacity: 0.75;
-      }
-      .price-chip {
-        display:inline-block;
-        padding: 5px 10px;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.10);
-        font-size: 11px;
-        font-weight: 850;
-      }
+.brand {
+  font-weight: 900;
+  font-size: 18px;
+  color: #ffffff;
+}
 
-      /* Buttons rounder */
-      .stButton>button {
-        border-radius: 14px;
-        padding: 0.58rem 0.9rem;
-        font-weight: 800;
-      }
-      .stTextInput input, .stNumberInput input {
-        border-radius: 14px;
-      }
-      .stSelectbox div[data-baseweb="select"] > div {
-        border-radius: 14px;
-      }
+.subtle {
+  font-size: 12px;
+  color: #b5b8c5;
+}
 
-      /* Tabs style */
-      .stTabs [data-baseweb="tab"] {
-        font-size: 12px;
-        padding: 10px 12px;
-      }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+.wallet {
+  text-align: right;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* HERO */
+.hero {
+  margin-top: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #2b0f1c, #15182a);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.hero-title {
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.hero-sub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #d1d4e0;
+}
+
+.pill {
+  display: inline-block;
+  margin-top: 10px;
+  margin-right: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Section headers */
+.rowtitle {
+  margin: 18px 0 10px 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+/* Cards */
+.poster {
+  background: #161923;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 12px;
+}
+
+.poster-art {
+  height: 140px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2c1a2e, #1a1f33);
+  position: relative;
+}
+
+.poster-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #000000cc;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.poster-main {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.poster-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #aeb3c7;
+}
+
+/* Buttons */
+.stButton > button {
+  background: #e50914;
+  color: #ffffff;
+  border-radius: 14px;
+  font-weight: 900;
+  border: none;
+}
+
+.stButton > button:hover {
+  background: #ff1f2d;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab"] {
+  font-size: 12px;
+  color: #9aa0b5;
+}
+
+.stTabs [aria-selected="true"] {
+  color: #ffffff;
+  border-bottom: 2px solid #e50914;
+}
+</style>
 
 # ----------------------------
 # League "logo" badges (stylized SVG)
