@@ -242,6 +242,18 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+.poster-art {
+  position: relative;
+  overflow: hidden;
+}
+
+.poster-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 # ----------------------------
 # Logos: local assets + fallback badge
@@ -285,6 +297,61 @@ def league_logo_uri(league: str) -> str:
             return file_to_data_uri(path)
     bg, fg = LEAGUE_COLORS.get(league, ("#0f172a", "#ffffff"))
     return svg_badge(league, bg, fg)
+def sport_art_uri(sport: str, league: str = "") -> str:
+    """
+    Returns a base64 SVG background that matches the sport.
+    No external images required.
+    """
+    sport_key = (sport or "").lower()
+
+    if "soccer" in sport_key:
+        bg1, bg2, accent = "#16a34a", "#14532d", "rgba(255,255,255,0.55)"
+        label = "SOCCER"
+        lines = """
+          <rect x="18" y="14" width="324" height="168" rx="18" fill="none" stroke="{accent}" stroke-width="3"/>
+          <line x1="180" y1="14" x2="180" y2="182" stroke="{accent}" stroke-width="3"/>
+          <circle cx="180" cy="98" r="28" fill="none" stroke="{accent}" stroke-width="3"/>
+        """
+    elif "basket" in sport_key:
+        bg1, bg2, accent = "#f97316", "#7c2d12", "rgba(255,255,255,0.55)"
+        label = "BASKETBALL"
+        lines = """
+          <rect x="18" y="14" width="324" height="168" rx="18" fill="none" stroke="{accent}" stroke-width="3"/>
+          <circle cx="180" cy="98" r="30" fill="none" stroke="{accent}" stroke-width="3"/>
+        """
+    elif "baseball" in sport_key:
+        bg1, bg2, accent = "#2563eb", "#1e3a8a", "rgba(255,255,255,0.6)"
+        label = "BASEBALL"
+        lines = """
+          <path d="M180 168 L240 108 L180 48 L120 108 Z" fill="none" stroke="{accent}" stroke-width="3"/>
+          <circle cx="180" cy="108" r="6" fill="{accent}"/>
+        """
+    elif "football" in sport_key:
+        bg1, bg2, accent = "#111827", "#020617", "rgba(255,255,255,0.55)"
+        label = "FOOTBALL"
+        lines = """
+          <rect x="18" y="14" width="324" height="168" rx="18" fill="none" stroke="{accent}" stroke-width="3"/>
+        """
+    else:
+        bg1, bg2, accent = "#7c3aed", "#312e81", "rgba(255,255,255,0.5)"
+        label = (league or "SPORT").upper()
+        lines = ""
+
+    svg = f"""
+    <svg xmlns="http://www.w3.org/2000/svg" width="360" height="196" viewBox="0 0 360 196">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="{bg1}"/>
+          <stop offset="1" stop-color="{bg2}"/>
+        </linearGradient>
+      </defs>
+      <rect width="360" height="196" rx="18" fill="url(#g)"/>
+      {lines.format(accent=accent)}
+      <text x="20" y="180" font-size="14" font-weight="800"
+            fill="rgba(255,255,255,0.7)">{label}</text>
+    </svg>
+    """
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
 
 # ----------------------------
 # Demo catalog
@@ -365,15 +432,17 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     purchased = is_purchased(game_id)
     logo_uri = league_logo_uri(row["league"])
 
+art_uri = sport_art_uri(row["sport"], row["league"])
     st.markdown(
         f"""
-        <div class="poster">
-          <div class="poster-art">
-            <div class="poster-badge">
-              <img class="logo" src="{logo_uri}" width="22" height="22"/>
-              <span>{row["league"]}</span>
-            </div>
-          </div>
+       <div class="poster-art">
+  <img class="poster-bg" src="{art_uri}" />
+  <div class="poster-badge">
+    <img class="logo" src="{logo_uri}" width="22" height="22"/>
+    <span>{row["league"]}</span>
+  </div>
+</div>
+
           <div class="poster-main">{title}</div>
           <div class="poster-meta">{row["start_str"]} - {row["platform"]}</div>
         </div>
