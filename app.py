@@ -6,6 +6,7 @@
 # - Buttons never cut off (short labels + CSS)
 # - League logos from repo assets/logos/<LEAGUE>.(png|svg|jpg|webp) with fallback badge
 # - Guard against stale active_game selection
+# - Demo "Watch" playback via YouTube embed (for believable prototype)
 
 import streamlit as st
 from datetime import datetime, timedelta
@@ -31,9 +32,31 @@ if "toast_msg" not in st.session_state:
     st.session_state.toast_msg = None
 if "active_game" not in st.session_state:
     st.session_state.active_game = None
+if "now_playing" not in st.session_state:
+    st.session_state.now_playing = None  # dict: {title, league, url}
 
 def toast(msg: str):
     st.session_state.toast_msg = msg
+
+# ----------------------------
+# YouTube demo videos (prototype playback)
+# NOTE: replace these with any "safe" highlight/hype videos you prefer.
+# ----------------------------
+YOUTUBE_DEMOS = {
+    "UCL": "https://www.youtube.com/watch?v=2cV0xE7D8qg",
+    "NBA": "https://www.youtube.com/watch?v=R9hKz8m1q4E",
+    "NFL": "https://www.youtube.com/watch?v=Hj5c7G9wZqI",
+    "MLS": "https://www.youtube.com/watch?v=7q0z1F0kFzQ",
+    "MLB": "https://www.youtube.com/watch?v=9p9d3k6yq0A",
+    "NWSL": "https://www.youtube.com/watch?v=J8Q5p3y4ZkQ",
+}
+
+def start_demo_playback(title: str, league: str):
+    st.session_state.now_playing = {
+        "title": title,
+        "league": league,
+        "url": YOUTUBE_DEMOS.get(league)
+    }
 
 # ----------------------------
 # CSS: Light UI + wider phone + button fit
@@ -229,7 +252,6 @@ def svg_badge(text: str, bg: str, fg: str) -> str:
     return f"data:image/svg+xml;base64,{b64}"
 
 def league_logo_uri(league: str) -> str:
-    # Looks for assets/logos/UCL.png etc.
     for ext in ("png", "svg", "jpg", "jpeg", "webp"):
         path = os.path.join("assets", "logos", f"{league}.{ext}")
         if os.path.exists(path):
@@ -339,10 +361,10 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     with c2:
         if purchased:
             if st.button("Watch", key=f"watch_{key_prefix}", use_container_width=True):
-                toast("Launching player (demo)...")
-                st.info("Demo player placeholder. Production would deep-link into broadcaster stream.")
+                start_demo_playback(title=title, league=row["league"])
+                toast("Starting demo playback...")
+                st.rerun()
         else:
-            # Short label avoids cutoffs; price still shown
             if st.button(f"Buy ${p:,.2f}", key=f"buy_{key_prefix}", use_container_width=True):
                 st.session_state.active_game = game_id
 
@@ -514,9 +536,12 @@ with tab_library:
                 """,
                 unsafe_allow_html=True
             )
+
             if st.button("Watch", key=f"lib_watch__{game_id}", use_container_width=True):
-                toast("Launching player (demo)...")
-                st.info("Demo player placeholder.")
+                start_demo_playback(title=r["title"], league=r["league"])
+                toast("Starting demo playback...")
+                st.rerun()
+
             st.write("")
 
 # PROFILE
@@ -542,6 +567,7 @@ with tab_profile:
         st.session_state.purchases = {}
         st.session_state.wallet = 12.00
         st.session_state.active_game = None
+        st.session_state.now_playing = None
         toast("Reset complete.")
         st.rerun()
 
@@ -570,8 +596,9 @@ if st.session_state.active_game:
         c1, c2 = st.columns(2)
         with c1:
             if st.button("Watch", key=f"selected_watch__{game_id}", use_container_width=True):
-                toast("Launching player (demo)...")
-                st.info("Demo player placeholder.")
+                start_demo_playback(title=f"{game_row['away']} @ {game_row['home']}", league=game_row["league"])
+                toast("Starting demo playback...")
+                st.rerun()
         with c2:
             if st.button("Close", key=f"selected_close__{game_id}", use_container_width=True):
                 st.session_state.active_game = None
@@ -592,5 +619,25 @@ if st.session_state.active_game:
                 toast("Wallet +$5.")
                 st.rerun()
 
+# ----------------------------
+# Demo Player (YouTube)
+# ----------------------------
+if st.session_state.now_playing:
+    vid = st.session_state.now_playing
+    st.markdown("<div class='rowtitle'>Now Playing</div>", unsafe_allow_html=True)
+    st.info(f"{vid['title']} (demo playback)")
+
+    if vid.get("url"):
+        st.video(vid["url"])
+    else:
+        st.warning("No demo video is set for this league.")
+        st.write("Add a URL in YOUTUBE_DEMOS for this league code.")
+
+    if st.button("Close Player", key="close_player", use_container_width=True):
+        st.session_state.now_playing = None
+        st.rerun()
+
+# Close phone frame
 st.markdown("</div></div>", unsafe_allow_html=True)
+
 st.caption("Demo only - No real payments/rights/streams - Prototype presentation.")
