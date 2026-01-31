@@ -430,7 +430,7 @@ st.markdown(
       </div>
       <div class="wallet">
         <div class="subtle">Wallet</div>
-        <div>${st.session_state.wallet:,.2f}</div>
+        <div>${st.session_state.wallet:,.2}</div>
       </div>
     </div>
     """,
