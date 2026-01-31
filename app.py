@@ -433,6 +433,7 @@ def poster_card(row: pd.Series, section_key: str, deal_on=False, deal_pct=0):
     logo_uri = league_logo_uri(row["league"])
 
 art_uri = sport_art_uri(row["sport"], row["league"])
+
     st.markdown(
         f"""
        <div class="poster-art">
